@@ -226,7 +226,7 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, northcom
 
 
 
-def plot_on_kite_box(coords_out, scene, eastings, northings, eastcomb, northcomb, x0,y0,x1,y1):
+def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings, eastcomb, northcomb, x0c,y0c,x1c,y1c):
             scd = scene
             from mpl_toolkits.basemap import Basemap
             data_dsc= scd.displacement
@@ -238,20 +238,45 @@ def plot_on_kite_box(coords_out, scene, eastings, northings, eastcomb, northcomb
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
 
-            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
-            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+            map.drawmapscale(num.min(eastings)+ratio_lon*0.25, num.min(northings)+ratio_lat*0.25, num.mean(eastings), num.mean(northings), 30)
+            parallels = num.arange(num.min(northings),num.max(northings),0.2)
+            meridians = num.arange(num.min(eastings),num.max(eastings),0.2)
+            map.imshow(data_dsc, cmap='jet')
             ax = plt.gca()
-            xpixels = 800
-            if topo is True:
-                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
-            map.imshow(data_dsc)
+
+            coords_all = []
+            for coords in coords_line:
+                print('coords',coords)
+                coords_boxes = []
+                for k in coords:
+                    print(k)
+                    kx = k[1]
+                    ky = k[0]
+                    coords_boxes.append([eastcomb[int(kx)][int(ky)], northcomb[int(kx)][int(ky)]])
+                coords_all.append(coords_boxes)
+            n = 0
+            print(coords_boxes)
+            print(coords_all)
+            print(len(coords_all))
+            for coords in coords_all:
+
+                x1, y1 = map(coords[0][0], coords[0][1])
+                x1a, y1a = map(coords[1][0], coords[1][1])
+                x0, y0 = map(coords[2][0], coords[2][1])
+                x2, y2 = map(coords[3][0], coords[3][1])
+                n = n+1
+                print('x1', x1, y1)
+                ax.plot((x0, x1), (y0, y1), 'r--', linewidth=2.5)
+                ax.plot((x0, x1a), (y0, y1a), 'r--', linewidth=2.5)
+
+            #    ax.plot((x0, x2), (y0, y2), '-k', linewidth=2.5)
+                ax.plot(x0, y0, '.g', markersize=15)
 
             coords_boxes = []
-            coords_all = []
             for k in coords_out:
-                coords_boxes = []
                 minr, minc, maxr, maxc = k[0], k[1], k[2], k[3]
+
+                print('coords', k)
 
                 kx = k[2]
                 ky = k[1]
@@ -259,26 +284,33 @@ def plot_on_kite_box(coords_out, scene, eastings, northings, eastcomb, northcomb
                 kx = k[0]
                 ky = k[3]
                 coords_boxes.append([eastcomb[int(kx)][int(ky)], northcomb[int(kx)][int(ky)]])
-                coords_all.append(coords_boxes)
-            n = 0
-            n = 0
 
-            for coords in coords_all:
-                minc, minr = map(coords[0][0], coords[0][1])
-                maxc, maxr = map(coords[1][0], coords[1][1])
+            n = 0
+            print('boxes', coords_boxes)
+
+            for coords in coords_out:
+                minc, minr = map(coords_boxes[0+n][0], coords_boxes[0+n][1])
+                maxc, maxr = map(coords_boxes[1+n][0], coords_boxes[1+n][1])
+                print(minr, minc, maxr, maxc)
+            #    plt.scatter(minc, minr, c='r')
+            #    plt.scatter(maxc, maxr)
+
                 n = n+1
-                rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
-                                                      fill=False, edgecolor='red', linewidth=2)
-
+                rect = mpatches.Rectangle((minc, minr),  maxc - minc, maxr - minr,
+                                                      fill=False, edgecolor='r', linewidth=2)
 
                 ax.add_patch(rect)
 
-            ax = plt.gca()
+
+            #map.imshow(data_dsc,  extent = (x0, x1, y0, y1))
+            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
+            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
 
             meridians = num.around(meridians, decimals=1, out=None)
             parallels = num.around(parallels, decimals=1, out=None)
 
             ticks = map(meridians, parallels)
+
 
             ax.set_xticks(ticks[0] )
             ax.set_yticks(ticks[1])
@@ -286,26 +318,8 @@ def plot_on_kite_box(coords_out, scene, eastings, northings, eastcomb, northcomb
             ax.set_yticklabels(parallels, fontsize=22)
             ax.tick_params(direction='out', length=6, width=4)
             plt.grid()
-
-            #map.drawparallels(parallels,labels=[1,0,0,0],fontsize=22)
-            #map.drawmeridians(meridians,labels=[1,1,0,1],fontsize=22, rotation=45)
-            addArrow(ax, scene)
-            try:
-
-                x0, y0 = map(x0, y0)
-                x1, y1 = map(x1, y1)
-                ax.set_xlim([x0, x1])
-                ax.set_ylim([y0, y1])
-            except:
-                pass
-
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="5%", pad=0.05)
-
-            plt.colorbar(cax=cax)
             if synthetic is True:
                 from pyrocko.gf import RectangularSource
-
                 source = RectangularSource(
                             lat= 52.0,
                             lon= 5.4,
@@ -320,7 +334,24 @@ def plot_on_kite_box(coords_out, scene, eastings, northings, eastcomb, northcomb
                 n, e = source.outline(cs='latlon').T
                 e, n = map(e,n)
                 ax.fill(e, n, color=(0, 0, 0), lw = 3)
+
+            addArrow(ax, scene)
+            try:
+
+                x0, y0 = map(x0c, y0c)
+                x1, y1 = map(x1c, y1c)
+                ax.set_xlim([x0, x1])
+                ax.set_ylim([y0, y1])
+            except:
+                pass
+
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+
+            plt.colorbar(cax=cax)
+
             plt.show()
+
 
 
 def plot_on_map(db, scene, eastings, northings, x0,y0,x1,y1, kite_scene=False):
@@ -905,7 +936,7 @@ def to_latlon(fname):
 def bounding_box(image):
     thresh = threshold_otsu(image)
 
-    bw = closing(image > thresh, square(10))
+    bw = closing(image > thresh, square(1))
 
     label_image = label(bw)
     image_label_overlay = label2rgb(label_image, image=image)
@@ -918,7 +949,7 @@ def bounding_box(image):
     coords_out = []
     coords_box = []
     for region in regionprops(label_image):
-    #    if region.area >= 1000: #check if nec.
+        if region.area >= 300: #check if nec.
 
             coords = []
             minr, minc, maxr, maxc = region.bbox
@@ -1092,169 +1123,173 @@ def dump_geojson(fault, eastings, northings, tiff=False):
         json.dump(database, f)
 
     return database
-
-try:
-    x0 = float(sys.argv[3])
-    y0 = float(sys.argv[4])
-    x1 = float(sys.argv[5])
-    y1 = float(sys.argv[6])
-except:
-    x0 = "eins"
-    y0 = "eins"
-    x1 = "eins"
-    y1 = "eins"
-sharp = False
-loading = False
-plot = True
-topo = False
-synthetic = False
-
-for argv in sys.argv:
-    if argv == "--sharp=True":
-        sharp = True
-    if argv == "--basic":
-        sharp = "basic"
-    if argv == "--loading=True":
-        loading = True
-    if argv == "--plot=False":
-        plot = False
-    if argv[0:10] == "--workdir=":
-        name= argv[10:]
-    if argv == "--topography=True":
-        topo = True
-    if argv == "--synthetic":
-        synthetic = True
-
-subsample = False
-
-if loading is False:
-
-    img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
-
+if __name__ == "__main__":
     try:
-        os.mkdir('work-%s' %name)
+        x0 = float(sys.argv[3])
+        y0 = float(sys.argv[4])
+        x1 = float(sys.argv[5])
+        y1 = float(sys.argv[6])
     except:
-        pass
-    files = glob.glob('work-%s/*' %name)
-    for f in files:
-        os.remove(f)
-    fname = 'work-%s/asc.mod.tif' %name
-    writeout(img_asc, fname, sc=scene_asc)
-    longs_asc, lats_asc = to_latlon(fname)
-    img_asc = process(img_asc, coh_asc, longs_asc, lats_asc, scene_asc, x0,y0,x1,y1, plot=True, coh_sharp=sharp)
+        x0 = "eins"
+        y0 = "eins"
+        x1 = "eins"
+        y1 = "eins"
+    sharp = False
+    loading = False
+    plot = True
+    topo = False
+    synthetic = False
+    calc_statistics = False
+    subsample = False
 
-    writeout(img_asc, fname, sc=scene_asc)
-    db =1
+    for argv in sys.argv:
+        if argv == "--sharp":
+            sharp = True
+        if argv == "--basic":
+            sharp = "basic"
+        if argv == "--loading=True":
+            loading = True
+        if argv == "--plot=False":
+            plot = False
+        if argv[0:10] == "--workdir=":
+            name= argv[10:]
+        if argv == "--topography=True":
+            topo = True
+        if argv == "--synthetic":
+            synthetic = True
+        if argv == "--statistics":
+            calc_statistics=True
+        if argv == "--subsample":
+            subsample = True
+
+    if loading is False:
+
+        img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
+
+        try:
+            os.mkdir('work-%s' %name)
+        except:
+            pass
+        files = glob.glob('work-%s/*' %name)
+        for f in files:
+            os.remove(f)
+        fname = 'work-%s/asc.mod.tif' %name
+        writeout(img_asc, fname, sc=scene_asc)
+        longs_asc, lats_asc = to_latlon(fname)
+        img_asc = process(img_asc, coh_asc, longs_asc, lats_asc, scene_asc, x0,y0,x1,y1, plot=True, coh_sharp=sharp)
+
+        writeout(img_asc, fname, sc=scene_asc)
+        db =1
+        img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
+        plot_on_map(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1, kite_scene=True)
+
+        img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
+        fname = 'work-%s/dsc.mod.tif' %name
+        writeout(img_dsc, fname, sc=scene_dsc)
+        longs_dsc, lats_dsc = to_latlon(fname)
+        img_dsc = process(img_dsc, coh_dsc, longs_dsc, lats_dsc, scene_dsc, x0,y0,x1,y1, plot=True, coh_sharp=sharp)
+
+        writeout(img_dsc, fname, sc=scene_dsc)
+        db =1
+        img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
+        plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1, kite_scene=True)
+
+
+        comb_img = combine('work-%s/asc.mod.tif' % name, 'work-%s/dsc.mod.tif' %name, plot=False)
+        longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" %name)
+
+    else:
+        fname = 'work-%s/merged.tiff' %name
+        comb = rasterio.open(fname)
+        longs, lats = to_latlon(fname)
+        comb_img = comb.read(1)
+        easts, norths = get_coords_from_geotiff(fname, comb_img)
+        dE = easts[1]-easts[0]
+        dN = norths[1]-norths[0]
+        ll_long = num.min(longs)
+        ll_lat = num.min(lats)
+
+        if plot is True:
+            plt.figure(figsize=(sz1, sz2))
+            plt.title('Loaded combined image')
+            xr= plt.imshow(comb_img)
+            plt.show()
+
+        if subsample is True:
+            # Define the scene's frame
+            frame = FrameConfig(
+                # Lower left geographical reference [deg]
+                llLat=ll_lat, llLon=ll_long,
+                # Pixel spacing [m] or [degrees]
+                spacing='meter', dE=dE, dN=dN)
+
+            displacement = comb_img
+            # Look vectors
+            # Theta is elevation angle from horizon
+            theta = num.full_like(displacement, 48.*d2r)
+            # Phi is azimuth towards the satellite, counter-clockwise from East
+            phi = num.full_like(displacement, 23.*d2r)
+
+            kite_comb_scene = Scene(
+                displacement=displacement,
+                phi=phi, theta=theta,
+                frame=frame)
+            kite_comb_scene.spool()
+
+            # For convenience we set an abbreviation to the quadtree
+            qt = kite_comb_scene.quadtree
+
+            # Parametrisation of the quadtree
+            qt.epsilon = 0.024        # Variance threshold
+            qt.nan_allowed = 0.9      # Percentage of NaN values allowed per tile/leave
+
+            qt.tile_size_max = 12000  # Maximum leave edge length in [m] or [deg]
+            qt.tile_size_min = 250    # Minimum leave edge length in [m] or [deg]
+
+            # We save the scene in kite's format
+            #sc.save('kite_scene')
+
+            # Or export the quadtree to CSV file
+            #qt.export('/tmp/tree.csv')
+
+
+
+    # statistical output
+    #img_asc, coh_asc, scene_asc = load('muji_kite/asc', kite_scene=True)
+    #comb_img = process(img_asc, coh_asc, plot=True)
+    # use quadtree subsampling on gradient
+
     img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
-    plot_on_map(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1, kite_scene=True)
-
-    img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
-    fname = 'work-%s/dsc.mod.tif' %name
-    writeout(img_dsc, fname, sc=scene_dsc)
-    longs_dsc, lats_dsc = to_latlon(fname)
-    img_dsc = process(img_dsc, coh_dsc, longs_dsc, lats_dsc, scene_dsc, x0,y0,x1,y1, plot=True, coh_sharp=sharp)
-
-    writeout(img_dsc, fname, sc=scene_dsc)
+    fname = 'work-%s/asc.mod.tif' %name
+    #writeout(img_asc, fname, sc=scene_asc)
+    longs_asc, lats_asc = to_latlon(fname)
     db =1
-    img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
-    plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1, kite_scene=True)
-
-
-    comb_img = combine('work-%s/asc.mod.tif' % name, 'work-%s/dsc.mod.tif' %name, plot=False)
-    longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" %name)
-
-else:
-    fname = 'work-%s/merged.tiff' %name
-    comb = rasterio.open(fname)
-    longs, lats = to_latlon(fname)
-    comb_img = comb.read(1)
-    easts, norths = get_coords_from_geotiff(fname, comb_img)
-    dE = easts[1]-easts[0]
-    dN = norths[1]-norths[0]
-    ll_long = num.min(longs)
-    ll_lat = num.min(lats)
-    # for plotting mask
-    #comb_img[num.where(comb_img==0)] = 'NaN'
-    #comb_img[num.where(comb_img<0.2)] = 'NaN'
-
+    longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" % name)
     if plot is True:
-        plt.figure(figsize=(sz1, sz2))
-        plt.title('Loaded combined image')
-        xr= plt.imshow(comb_img)
-        plt.show()
+        plot_on_map(db, comb_img.copy(), longs_comb, lats_comb, x0,y0,x1,y1)
 
-    if subsample is True:
-        # Define the scene's frame
-        frame = FrameConfig(
-            # Lower left geographical reference [deg]
-            llLat=ll_lat, llLon=ll_long,
-            # Pixel spacing [m] or [degrees]
-            spacing='meter', dE=dE, dN=dN)
+    centers_bounding, coords_out, coords_box = bounding_box(comb_img)
+    if plot is True:
+        plot_on_kite_box(coords_box, coords_out, scene_asc, longs_asc, lats_asc, longs_comb, lats_comb, x0,y0,x1,y1)
 
-        displacement = comb_img
-        # Look vectors
-        # Theta is elevation angle from horizon
-        theta = num.full_like(displacement, 48.*d2r)
-        # Phi is azimuth towards the satellite, counter-clockwise from East
-        phi = num.full_like(displacement, 23.*d2r)
+        plot_on_kite_line(coords_out, scene_asc, longs_asc, lats_asc, longs_comb, lats_comb, x0,y0,x1,y1)
 
-        kite_comb_scene = Scene(
-            displacement=displacement,
-            phi=phi, theta=theta,
-            frame=frame)
-        kite_comb_scene.spool()
+    simp_fault, comp_fault = simplify(centers_bounding)
 
-        # For convenience we set an abbreviation to the quadtree
-        qt = kite_comb_scene.quadtree
+    db = dump_geojson(simp_fault, longs, lats) #check
+    if plot is True:
+        plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1)
 
-        # Parametrisation of the quadtree
-        qt.epsilon = 0.024        # Variance threshold
-        qt.nan_allowed = 0.9      # Percentage of NaN values allowed per tile/leave
+    img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
+    fname = 'work-%s/dsc.mod.tif' % name
+    longs_dsc, lats_dsc = to_latlon(fname)
+    if plot is True:
+        plot_on_kite_scatter(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1)
 
-        qt.tile_size_max = 12000  # Maximum leave edge length in [m] or [deg]
-        qt.tile_size_min = 250    # Minimum leave edge length in [m] or [deg]
+    centers = skelotonize(comb_img)
+    simp_fault, comp_fault = simplify(centers)
 
-        # We save the scene in kite's format
-        #sc.save('kite_scene')
-
-        # Or export the quadtree to CSV file
-        #qt.export('/tmp/tree.csv')
-
-
-
-# statistical output
-#img_asc, coh_asc, scene_asc = load('muji_kite/asc', kite_scene=True)
-#comb_img = process(img_asc, coh_asc, plot=True)
-# use quadtree subsampling on gradient
-
-img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
-fname = 'work-%s/asc.mod.tif' %name
-#writeout(img_asc, fname, sc=scene_asc)
-longs_asc, lats_asc = to_latlon(fname)
-db =1
-longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" % name)
-
-plot_on_map(db, comb_img.copy(), longs_comb, lats_comb, x0,y0,x1,y1)
-
-centers_bounding, coords_out, coords_box = bounding_box(comb_img)
-plot_on_kite_box(coords_box, scene_asc, longs_asc, lats_asc, longs_comb, lats_comb, x0,y0,x1,y1)
-
-plot_on_kite_line(coords_out, scene_asc, longs_asc, lats_asc, longs_comb, lats_comb, x0,y0,x1,y1)
-
-simp_fault, comp_fault = simplify(centers_bounding)
-
-db = dump_geojson(simp_fault, longs, lats) #check
-plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1)
-
-img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
-fname = 'work-%s/dsc.mod.tif' % name
-longs_dsc, lats_dsc = to_latlon(fname)
-plot_on_kite_scatter(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1)
-
-
-centers = skelotonize(comb_img)
-simp_fault, comp_fault = simplify(centers)
-
-res_faults = rup_prop(db)
-y = l1tf_prep(res_faults)
-run_l1tf(y)
+    if calc_statistics is True:
+        res_faults = rup_prop(db)
+        y = l1tf_prep(res_faults)
+        run_l1tf(y)
