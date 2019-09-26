@@ -35,6 +35,8 @@ import matplotlib.pyplot as plt
 from kite.scene import BaseScene, FrameConfig
 import sys
 from mpl_toolkits.basemap import Basemap
+import glob
+import os
 
 plt.switch_backend('Qt4Agg')
 
@@ -45,7 +47,42 @@ sz2=20
 selem = rectangle(100,100)
 d2r = num.pi / 180.
 
-def plot_on_kite_scatter(db, scene, eastings, northings):
+
+def addArrow(ax, scene):
+    from matplotlib import patches
+    phi = num.nanmean(scene.phi)
+    los_dx = num.cos(phi + num.pi) * .0625
+    los_dy = num.sin(phi + num.pi) * .0625
+
+    az_dx = num.cos(phi - num.pi/2) * .125
+    az_dy = num.sin(phi - num.pi/2) * .125
+
+    anchor_x = .9 if los_dx < 0 else .1
+    anchor_y = .85 if los_dx < 0 else .975
+
+    az_arrow = patches.FancyArrow(
+        x=anchor_x-az_dx, y=anchor_y-az_dy,
+        dx=az_dx, dy=az_dy,
+        head_width=.025,
+        alpha=.5, fc='k',
+        head_starts_at_zero=False,
+        length_includes_head=True,
+        transform=ax.transAxes)
+
+    los_arrow = patches.FancyArrow(
+        x=anchor_x-az_dx/2, y=anchor_y-az_dy/2,
+        dx=los_dx, dy=los_dy,
+        head_width=.02,
+        alpha=.5, fc='k',
+        head_starts_at_zero=False,
+        length_includes_head=True,
+        transform=ax.transAxes)
+
+    ax.add_artist(az_arrow)
+    ax.add_artist(los_arrow)
+
+
+def plot_on_kite_scatter(db, scene, eastings, northings, x0,y0,x1,y1):
             scd = scene
             data_dsc= scd.displacement
 
@@ -57,10 +94,11 @@ def plot_on_kite_scatter(db, scene, eastings, northings):
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.arange(num.min(northings),num.max(northings),0.2)
-            meridians = num.arange(num.min(eastings),num.max(eastings),0.2)
+            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
+            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
             xpixels = 800
-            map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
+            if topo is True:
+                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             map.imshow(data_dsc)
             gj = db
             faults = gj['features']
@@ -77,14 +115,11 @@ def plot_on_kite_scatter(db, scene, eastings, northings):
                 x, y = map(coords_re_x, coords_re_y)
                 plt.scatter(x, y, c=next(colors))
             ax = plt.gca()
-            x0, y0 = map(73.5, 38.8)
-            x1, y1 = map(75.3, 39.7)
+
             meridians = num.around(meridians, decimals=1, out=None)
             parallels = num.around(parallels, decimals=1, out=None)
 
             ticks = map(meridians, parallels)
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
 
             ax.set_xticks(ticks[0] )
             ax.set_yticks(ticks[1])
@@ -92,18 +127,26 @@ def plot_on_kite_scatter(db, scene, eastings, northings):
             ax.set_yticklabels(parallels, fontsize=22)
             ax.tick_params(direction='out', length=6, width=4)
             plt.grid()
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
+
             #map.drawparallels(parallels,labels=[1,0,0,0],fontsize=22)
             #map.drawmeridians(meridians,labels=[1,1,0,1],fontsize=22, rotation=45)
+            addArrow(ax, scene)
+            try:
 
+                x0, y0 = map(x0, y0)
+                x1, y1 = map(x1, y1)
+                ax.set_xlim([x0, x1])
+                ax.set_ylim([y0, y1])
+            except:
+                pass
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
 
+            plt.colorbar(cax=cax)
             plt.show()
 
 
-
-
-def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, northcomb):
+def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, northcomb, x0c,y0c,x1c,y1c):
             scd = scene
             from mpl_toolkits.basemap import Basemap
             data_dsc= scd.displacement
@@ -116,10 +159,11 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, northcom
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.arange(num.min(northings),num.max(northings),0.2)
-            meridians = num.arange(num.min(eastings),num.max(eastings),0.2)
+            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
+            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
             xpixels = 800
-            map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
+            if topo is True:
+                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             map.imshow(data_dsc)
             ax = plt.gca()
             coords_all = []
@@ -148,14 +192,12 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, northcom
 
 
             ax = plt.gca()
-            x0, y0 = map(73.5, 38.8)
-            x1, y1 = map(75.3, 39.7)
+
             meridians = num.around(meridians, decimals=1, out=None)
             parallels = num.around(parallels, decimals=1, out=None)
 
             ticks = map(meridians, parallels)
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
+
 
             ax.set_xticks(ticks[0] )
             ax.set_yticks(ticks[1])
@@ -163,18 +205,28 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, northcom
             ax.set_yticklabels(parallels, fontsize=22)
             ax.tick_params(direction='out', length=6, width=4)
             plt.grid()
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
+
             #map.drawparallels(parallels,labels=[1,0,0,0],fontsize=22)
             #map.drawmeridians(meridians,labels=[1,1,0,1],fontsize=22, rotation=45)
+            addArrow(ax, scene)
+            try:
 
+                x0c, y0c = map(x0c, y0c)
+                x1c, y1c = map(x1c, y1c)
+                ax.set_xlim([x0c, x1c])
+                ax.set_ylim([y0c, y1c])
+            except:
+                pass
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
 
+            plt.colorbar(cax=cax)
             plt.show()
 
 
 
 
-def plot_on_kite_box(coords_out, scene, eastings, northings, eastcomb, northcomb):
+def plot_on_kite_box(coords_out, scene, eastings, northings, eastcomb, northcomb, x0,y0,x1,y1):
             scd = scene
             from mpl_toolkits.basemap import Basemap
             data_dsc= scd.displacement
@@ -187,11 +239,12 @@ def plot_on_kite_box(coords_out, scene, eastings, northings, eastcomb, northcomb
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.arange(num.min(northings),num.max(northings),0.2)
-            meridians = num.arange(num.min(eastings),num.max(eastings),0.2)
+            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
+            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
             ax = plt.gca()
             xpixels = 800
-            map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
+            if topo is True:
+                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             map.imshow(data_dsc)
 
             coords_boxes = []
@@ -221,14 +274,11 @@ def plot_on_kite_box(coords_out, scene, eastings, northings, eastcomb, northcomb
                 ax.add_patch(rect)
 
             ax = plt.gca()
-            x0, y0 = map(73.5, 38.8)
-            x1, y1 = map(75.3, 39.7)
+
             meridians = num.around(meridians, decimals=1, out=None)
             parallels = num.around(parallels, decimals=1, out=None)
 
             ticks = map(meridians, parallels)
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
 
             ax.set_xticks(ticks[0] )
             ax.set_yticks(ticks[1])
@@ -236,22 +286,50 @@ def plot_on_kite_box(coords_out, scene, eastings, northings, eastcomb, northcomb
             ax.set_yticklabels(parallels, fontsize=22)
             ax.tick_params(direction='out', length=6, width=4)
             plt.grid()
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
+
             #map.drawparallels(parallels,labels=[1,0,0,0],fontsize=22)
             #map.drawmeridians(meridians,labels=[1,1,0,1],fontsize=22, rotation=45)
+            addArrow(ax, scene)
+            try:
 
+                x0, y0 = map(x0, y0)
+                x1, y1 = map(x1, y1)
+                ax.set_xlim([x0, x1])
+                ax.set_ylim([y0, y1])
+            except:
+                pass
 
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+
+            plt.colorbar(cax=cax)
+            if synthetic is True:
+                from pyrocko.gf import RectangularSource
+
+                source = RectangularSource(
+                            lat= 52.0,
+                            lon= 5.4,
+                            depth=3000.0,
+                            magnitude=6.0,
+                            strike=100.0,
+                            dip= 40.0,
+                            rake= -70.0,
+                            length= 20000.0,
+                            width=8000.0,
+                            velocity= 3500.0)
+                n, e = source.outline(cs='latlon').T
+                e, n = map(e,n)
+                ax.fill(e, n, color=(0, 0, 0), lw = 3)
             plt.show()
 
 
-def plot_on_map(db, scene, eastings, northings, kite_scene=False):
+def plot_on_map(db, scene, eastings, northings, x0,y0,x1,y1, kite_scene=False):
             from mpl_toolkits.basemap import Basemap
             if kite_scene is True:
                 scd = scene
                 data_dsc= scd.displacement
             else:
-                data_dsc= scene
+                data_dsc= num.rot90(scene.T)
 
             data_dsc[data_dsc==0] = num.nan
 
@@ -261,24 +339,21 @@ def plot_on_map(db, scene, eastings, northings, kite_scene=False):
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+ratio_lon*0.25, num.min(northings)+ratio_lat*0.25, num.mean(eastings), num.mean(northings), 30)
-            parallels = num.arange(int(num.min(northings)),int(num.max(northings)),0.2)
-            meridians = num.arange(int(num.min(eastings)),int(num.max(eastings)),0.2)
+            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
+            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
             xpixels = 800
-            map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
+            if topo is True:
+                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
 
-            x0, y0 = map(73.5, 38.6)
-            x1, y1 = map(75.3, 39.7)
 
             map.imshow(data_dsc)
             ax = plt.gca()
-            x0, y0 = map(73.5, 38.8)
-            x1, y1 = map(75.3, 39.7)
+
             meridians = num.around(meridians, decimals=1, out=None)
             parallels = num.around(parallels, decimals=1, out=None)
 
             ticks = map(meridians, parallels)
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
+
 
             ax.set_xticks(ticks[0] )
             ax.set_yticks(ticks[1])
@@ -286,15 +361,27 @@ def plot_on_map(db, scene, eastings, northings, kite_scene=False):
             ax.set_yticklabels(parallels, fontsize=22)
             ax.tick_params(direction='out', length=6, width=4)
             plt.grid()
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
+
             #map.drawparallels(parallels,labels=[1,0,0,0],fontsize=22)
             #map.drawmeridians(meridians,labels=[1,1,0,1],fontsize=22, rotation=45)
+            if kite_scene is True:
 
+                addArrow(ax, scene)
+            try:
+
+                x0, y0 = map(x0, y0)
+                x1, y1 = map(x1, y1)
+                ax.set_xlim([x0, x1])
+                ax.set_ylim([y0, y1])
+            except:
+                pass
+
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+
+            plt.colorbar(cax=cax)
             plt.show()
 
-
-# data load in
 
 def load(path, kite_scene=True, grid=False, path_cc=None):
 
@@ -318,6 +405,7 @@ def load(path, kite_scene=True, grid=False, path_cc=None):
         sc = None
 
     return img, coh, sc
+
 
 def read_float(filen, width):
     '''
@@ -394,10 +482,9 @@ def get_binned_ori(phase, selem, bin=None):
     return px_histograms, px_histogramsori
 
 
-def process(img, coh, longs, lats, plot=True):
+def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=False):
     selem = rectangle(100,100)
 
-    coh_sharp = False
     if coh_sharp is False:
         ls = img.copy()
         ls[num.where(ls < 0)] = 1
@@ -452,7 +539,58 @@ def process(img, coh, longs, lats, plot=True):
         img_filt = img_filt/num.max(img_filt)
         image = pointy*img_filt
 
-    else:
+    if coh_sharp == 'basic':
+
+        ls = img.copy()
+        ls[num.where(ls < 0)] = 1
+        ls[num.where(ls != 1)] = 0
+        ls_dark = img.copy()
+        ls_dark[num.where(ls_dark > 0)] = 1
+        ls_dark[num.where(ls_dark != 1)] = 0
+        mask = filters.gaussian_filter(ls, 1, order=0)
+        ls_dark[num.where(mask != 0)] = 0
+        ls_dank = ls_dark.copy()
+
+
+
+        quantized_img = ls
+        grad_mask, mag_mask, ori_mask = get_gradient(quantized_img)
+
+        grad, mag, ori = get_gradient(img)
+        grad2, mag2, or2 = get_gradient(grad)
+        grad2 = grad2/num.max(grad2)
+        px_histograms = rank.windowed_histogram(grad2, selem, n_bins=4)
+        px_histograms = num.sum(px_histograms, axis=2)
+
+        grad_mask[grad_mask !=0] = 1
+
+
+        pointy = grad*grad_mask
+        thres = num.max(pointy)*0.1
+        pointy[pointy < thres] = 0
+        image = pointy.copy()
+
+        pointy2 = grad_mask/num.max(grad_mask)
+        thres = num.max(pointy2)*0.1
+        pointy2[pointy2 < thres] = 0
+        pointy2[pointy2 > 0] = 1
+        image = pointy+pointy2
+
+        # weight be coherence
+        coh_filt = filters.gaussian_filter(num.abs(coh), 3, order=0)
+        grad_mask = filters.gaussian_filter(grad_mask, 20, order=0)
+        img2 = filters.gaussian_filter(img, 3, order=0)
+
+
+        grad_mask, mag_mask, ori_mask = get_gradient(ls)
+    #    grad_mask = filters.gaussian_filter(grad_mask, 20, order=0)
+
+        grad = grad/num.max(grad)
+        grad_mask = filters.gaussian_filter(grad_mask, 20, order=0)
+        grad_mask = grad_mask/num.max(grad_mask)
+        image = coh_filt*grad
+
+    if coh_sharp is True:
         ls = img.copy()
         ls[num.where(ls < 0)] = 1
         ls[num.where(ls != 1)] = 0
@@ -504,129 +642,31 @@ def process(img, coh, longs, lats, plot=True):
 
             map = Basemap(projection='merc', llcrnrlon=num.min(eastings),llcrnrlat=num.min(northings),urcrnrlon=num.max(eastings),urcrnrlat=num.max(northings),
                           resolution='h', epsg=3395)
+
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.arange(int(num.min(northings)),int(num.max(northings)),0.2)
-            meridians = num.arange(num.min(eastings),num.max(eastings),0.2)
+            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
+            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
             xpixels = 800
-            map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
+            if topo is True:
+                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             #ls_dark = ls_dark*-1.
             ls_dark[ls_dark==0] = num.nan
             ls_clear = ls.copy()
             ls_clear[ls_clear==0] = num.nan
 
-            x0, y0 = map(num.min(eastings), num.min(northings))
-            x1, y1 = map(num.max(eastings), num.max(northings))
+
             map.imshow(ls_dark, cmap='jet')
             map.imshow(ls_clear)
 
             ax = plt.gca()
-            x0, y0 = map(73.5, 38.8)
-            x1, y1 = map(75.3, 39.7)
+
             meridians = num.around(meridians, decimals=1, out=None)
             parallels = num.around(parallels, decimals=1, out=None)
 
             ticks = map(meridians, parallels)
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
-
-            ax.set_xticks(ticks[0] )
-            ax.set_yticks(ticks[1])
-            ax.set_xticklabels(meridians, rotation=45, fontsize=22)
-            ax.set_yticklabels(parallels, fontsize=22)
-            ax.tick_params(direction='out', length=6, width=4)
-            plt.grid()
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
-
-            plt.show()
-
-
-
-    if plot is True:
-            eastings = longs
-            northings = lats
-            fig = plt.figure()
-            map = Basemap(projection='merc', llcrnrlon=num.min(eastings),llcrnrlat=num.min(northings),urcrnrlon=num.max(eastings),urcrnrlat=num.max(northings),
-                          resolution='h', epsg=3395)
-            ratio_lat = num.max(northings)/num.min(northings)
-            ratio_lon = num.max(eastings)/num.min(eastings)
-
-            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.arange(int(num.min(northings)),int(num.max(northings)),0.2)
-            meridians = num.arange(num.min(eastings),num.max(eastings),0.2)
-            xpixels = 800
-            map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
-
-
-            x0, y0 = map(num.min(eastings), num.min(northings))
-            x1, y1 = map(num.max(eastings), num.max(northings))
-            image_show = grad_mask_filt*grad_mask_dark_filt
-            image_show[image_show<num.max(image_show)*0.05] = num.nan
-
-            image_show[image_show==0] = num.nan
-            map.imshow(image_show)
-
-
-            ax = plt.gca()
-            x0, y0 = map(73.5, 38.8)
-            x1, y1 = map(75.3, 39.7)
-            meridians = num.around(meridians, decimals=1, out=None)
-            parallels = num.around(parallels, decimals=1, out=None)
-
-            ticks = map(meridians, parallels)
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
-
-            ax.set_xticks(ticks[0] )
-            ax.set_yticks(ticks[1])
-            ax.set_xticklabels(meridians, rotation=45, fontsize=22)
-            ax.set_yticklabels(parallels, fontsize=22)
-            ax.tick_params(direction='out', length=6, width=4)
-            plt.grid()
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
-
-            plt.show()
-
-
-
-    if plot is True:
-            eastings = longs
-            northings = lats
-            fig = plt.figure()
-
-            map = Basemap(projection='merc', llcrnrlon=num.min(eastings),llcrnrlat=num.min(northings),urcrnrlon=num.max(eastings),urcrnrlat=num.max(northings),
-                          resolution='h', epsg=3395)
-            ratio_lat = num.max(northings)/num.min(northings)
-            ratio_lon = num.max(eastings)/num.min(eastings)
-
-            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.arange(int(num.min(northings)),int(num.max(northings)),0.2)
-            meridians = num.arange(num.min(eastings),num.max(eastings),0.2)
-            xpixels = 800
-            map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
-
-            x0, y0 = map(num.min(eastings), num.min(northings))
-            x1, y1 = map(num.max(eastings), num.max(northings))
-            image_show = pointy.copy()
-            image_show[image_show<num.max(image_show)*0.05] = num.nan
-
-            image_show[image_show==0] = num.nan
-            map.imshow(image_show)
-
-
-            ax = plt.gca()
-            x0, y0 = map(73.5, 38.8)
-            x1, y1 = map(75.3, 39.7)
-            meridians = num.around(meridians, decimals=1, out=None)
-            parallels = num.around(parallels, decimals=1, out=None)
-
-            ticks = map(meridians, parallels)
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
 
             ax.set_xticks(ticks[0])
             ax.set_yticks(ticks[1])
@@ -634,8 +674,14 @@ def process(img, coh, longs, lats, plot=True):
             ax.set_yticklabels(parallels, fontsize=22)
             ax.tick_params(direction='out', length=6, width=4)
             plt.grid()
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
+            try:
+                x0c, y0c = map(x0, y0)
+                x1c, y1c = map(x1, y1)
+                ax.set_xlim([x0c, x1c])
+                ax.set_ylim([y0c, y1c])
+            except:
+                pass
+            addArrow(ax, scene)
 
             plt.show()
 
@@ -647,43 +693,153 @@ def process(img, coh, longs, lats, plot=True):
 
             map = Basemap(projection='merc', llcrnrlon=num.min(eastings),llcrnrlat=num.min(northings),urcrnrlon=num.max(eastings),urcrnrlat=num.max(northings),
                           resolution='h', epsg=3395)
+
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.arange(int(num.min(northings)),int(num.max(northings)),0.2)
-            meridians = num.arange(num.min(eastings),num.max(eastings),0.2)
+            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
+            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
             xpixels = 800
-            map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
+            if topo is True:
 
-            x0, y0 = map(num.min(eastings), num.min(northings))
-            x1, y1 = map(num.max(eastings), num.max(northings))
-            image_show = image.copy()
-            image_show[image_show<num.max(image_show)*0.05] = num.nan
+                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
+            #ls_dark = ls_dark*-1.
+            ls_clear = grad.copy()
+            ls_clear[ls_clear==0] = num.nan
 
-            image_show[image_show==0] = num.nan
-            map.imshow(image_show)
 
+            map.imshow(ls_clear, cmap='jet')
 
             ax = plt.gca()
-            x0, y0 = map(73.5, 38.8)
-            x1, y1 = map(75.3, 39.7)
+
             meridians = num.around(meridians, decimals=1, out=None)
             parallels = num.around(parallels, decimals=1, out=None)
 
             ticks = map(meridians, parallels)
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
 
-            ax.set_xticks(ticks[0] )
+            ax.set_xticks(ticks[0])
             ax.set_yticks(ticks[1])
             ax.set_xticklabels(meridians, rotation=45, fontsize=22)
             ax.set_yticklabels(parallels, fontsize=22)
             ax.tick_params(direction='out', length=6, width=4)
             plt.grid()
-            ax.set_xlim([x0, x1])
-            ax.set_ylim([y0, y1])
 
+            try:
+                x0c, y0c = map(x0, y0)
+                x1c, y1c = map(x1, y1)
+                ax.set_xlim([x0c, x1c])
+                ax.set_ylim([y0c, y1c])
+            except:
+                pass
+            addArrow(ax, scene)
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+
+            plt.colorbar(cax=cax)
+            plt.show()
+
+    if plot is True:
+            eastings = longs
+            northings = lats
+            fig = plt.figure()
+
+            map = Basemap(projection='merc', llcrnrlon=num.min(eastings),llcrnrlat=num.min(northings),urcrnrlon=num.max(eastings),urcrnrlat=num.max(northings),
+                          resolution='h', epsg=3395)
+
+            ratio_lat = num.max(northings)/num.min(northings)
+            ratio_lon = num.max(eastings)/num.min(eastings)
+
+            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
+            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+            xpixels = 800
+            if topo is True:
+                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
+            #ls_dark = ls_dark*-1.
+            ls_clear = grad_mask.copy()
+            ls_clear[ls_clear==0] = num.nan
+
+
+            map.imshow(ls_clear, cmap='jet')
+
+            ax = plt.gca()
+
+            meridians = num.around(meridians, decimals=1, out=None)
+            parallels = num.around(parallels, decimals=1, out=None)
+
+            ticks = map(meridians, parallels)
+
+            ax.set_xticks(ticks[0])
+            ax.set_yticks(ticks[1])
+            ax.set_xticklabels(meridians, rotation=45, fontsize=22)
+            ax.set_yticklabels(parallels, fontsize=22)
+            ax.tick_params(direction='out', length=6, width=4)
+            plt.grid()
+            try:
+                x0c, y0c = map(x0, y0)
+                x1c, y1c = map(x1, y1)
+                ax.set_xlim([x0c, x1c])
+                ax.set_ylim([y0c, y1c])
+            except:
+                pass
+            addArrow(ax, scene)
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+
+            plt.colorbar(cax=cax)
+            plt.show()
+
+    if plot is True:
+            eastings = longs
+            northings = lats
+            fig = plt.figure()
+
+            map = Basemap(projection='merc', llcrnrlon=num.min(eastings),llcrnrlat=num.min(northings),urcrnrlon=num.max(eastings),urcrnrlat=num.max(northings),
+                          resolution='h', epsg=3395)
+
+            ratio_lat = num.max(northings)/num.min(northings)
+            ratio_lon = num.max(eastings)/num.min(eastings)
+
+            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
+            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+            xpixels = 800
+            if topo is True:
+
+                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
+            #ls_dark = ls_dark*-1.
+            ls_clear = image.copy()
+            ls_clear[ls_clear==0] = num.nan
+
+
+            map.imshow(ls_clear, cmap='jet')
+
+            ax = plt.gca()
+
+            meridians = num.around(meridians, decimals=1, out=None)
+            parallels = num.around(parallels, decimals=1, out=None)
+
+            ticks = map(meridians, parallels)
+
+            ax.set_xticks(ticks[0])
+            ax.set_yticks(ticks[1])
+            ax.set_xticklabels(meridians, rotation=45, fontsize=22)
+            ax.set_yticklabels(parallels, fontsize=22)
+            ax.tick_params(direction='out', length=6, width=4)
+            plt.grid()
+            try:
+                x0c, y0c = map(x0, y0)
+                x1c, y1c = map(x1, y1)
+                ax.set_xlim([x0c, x1c])
+                ax.set_ylim([y0c, y1c])
+            except:
+                pass
+            addArrow(ax, scene)
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+
+            plt.colorbar(cax=cax)
             plt.show()
 
     image = image/num.max(image)
@@ -709,11 +865,12 @@ def writeout(image, fname, sc=None):
         new_dataset.close()
 
 def combine(img_asc_path, img_dsc_path, plot=False):
-    subprocess.run(["gdal_merge.py", "-o", "work/comb.tif", img_asc_path, img_dsc_path, "-seperate"])
-    subprocess.run(['gdal_calc.py', '--calc=A+B', "--outfile=work/merged.tiff", '-A', "work/comb.tif",
-    "--A_band=1", "-B", "work/comb.tif", "--B_band=2", '--overwrite'])
-    fname = 'work/merged.tiff'
-    comb = rasterio.open('work/merged.tiff')
+    print('Merging ascending and descending outputs with gdal')
+    subprocess.run(["gdal_merge.py", "-o", "work-%s/comb.tif" %name, img_asc_path, img_dsc_path, "-seperate"])
+    subprocess.run(['gdal_calc.py', '--calc=A+B', "--outfile=work-%s/merged.tiff" % name, '-A', "work-%s/comb.tif" %name,
+    "--A_band=1", "-B", "work-%s/comb.tif" %name, "--B_band=2", '--overwrite'])
+    fname = 'work-%s/merged.tiff' %name
+    comb = rasterio.open('work-%s/merged.tiff' %name)
     img = comb.read(1)
     return img
 
@@ -776,8 +933,6 @@ def bounding_box(image):
             y1 = y0 - math.sin(orientation) * 0.5 * region.major_axis_length
             x1a = x0 - math.cos(orientation) * 0.5 * region.major_axis_length
             y1a = y0 + math.sin(orientation) * 0.5 * region.major_axis_length
-        #    x2 = x0 - math.sin(orientation) * 0.5 * region.minor_axis_length
-        #    y2 = y0 - math.cos(orientation) * 0.5 * region.minor_axis_length
             x2 = x0 - math.sin(orientation) * 0.05 * region.minor_axis_length
             y2 = y0 - math.cos(orientation) * 0.05 * region.minor_axis_length
             coords.append([x1,y1])
@@ -922,8 +1077,6 @@ def df_to_geojson(df, eastings, northings, properties=None):
             coords_fault.append((eastings[int(kx)][int(ky)], northings[int(kx)][int(ky)]))
         n =+ 1
 
-  #      for prop in properties:
-   #         feature['properties'][prop] = 'test'
         feature['geometry']['coordinates'] = coords_fault
         geojson['features'].append(feature)
     return geojson
@@ -935,55 +1088,83 @@ def dump_geojson(fault, eastings, northings, tiff=False):
     east = num.min(eastings)
     north = num.min(northings)
     database = df_to_geojson(fault, eastings, northings)
-    with open('work/fault_lines', 'w') as f:
+    with open('work-%s/fault_lines' %name, 'w') as f:
         json.dump(database, f)
 
     return database
 
+try:
+    x0 = float(sys.argv[3])
+    y0 = float(sys.argv[4])
+    x1 = float(sys.argv[5])
+    y1 = float(sys.argv[6])
+except:
+    x0 = "eins"
+    y0 = "eins"
+    x1 = "eins"
+    y1 = "eins"
+sharp = False
+loading = False
+plot = True
+topo = False
+synthetic = False
 
 for argv in sys.argv:
+    if argv == "--sharp=True":
+        sharp = True
+    if argv == "--basic":
+        sharp = "basic"
     if argv == "--loading=True":
         loading = True
-    else:
-        loading = False
-
-for argv in sys.argv:
     if argv == "--plot=False":
         plot = False
-    else:
-        plot = True
+    if argv[0:10] == "--workdir=":
+        name= argv[10:]
+    if argv == "--topography=True":
+        topo = True
+    if argv == "--synthetic":
+        synthetic = True
+
 subsample = False
 
 if loading is False:
 
     img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
-    fname = 'work/asc.mod.tif'
+
+    try:
+        os.mkdir('work-%s' %name)
+    except:
+        pass
+    files = glob.glob('work-%s/*' %name)
+    for f in files:
+        os.remove(f)
+    fname = 'work-%s/asc.mod.tif' %name
     writeout(img_asc, fname, sc=scene_asc)
     longs_asc, lats_asc = to_latlon(fname)
-    img_asc = process(img_asc, coh_asc, longs_asc, lats_asc, plot=True)
+    img_asc = process(img_asc, coh_asc, longs_asc, lats_asc, scene_asc, x0,y0,x1,y1, plot=True, coh_sharp=sharp)
 
     writeout(img_asc, fname, sc=scene_asc)
     db =1
     img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
-    plot_on_map(db, scene_asc, longs_asc, lats_asc, kite_scene=True)
+    plot_on_map(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1, kite_scene=True)
 
     img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
-    fname = 'work/dsc.mod.tif'
+    fname = 'work-%s/dsc.mod.tif' %name
     writeout(img_dsc, fname, sc=scene_dsc)
     longs_dsc, lats_dsc = to_latlon(fname)
-    img_dsc = process(img_dsc, coh_dsc, longs_dsc, lats_dsc, plot=True)
+    img_dsc = process(img_dsc, coh_dsc, longs_dsc, lats_dsc, scene_dsc, x0,y0,x1,y1, plot=True, coh_sharp=sharp)
 
     writeout(img_dsc, fname, sc=scene_dsc)
     db =1
     img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
-    plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, kite_scene=True)
+    plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1, kite_scene=True)
 
 
-    comb_img = combine('work/asc.mod.tif', 'work/dsc.mod.tif', plot=False)
-    longs_comb, lats_comb = to_latlon("work/merged.tiff")
+    comb_img = combine('work-%s/asc.mod.tif' % name, 'work-%s/dsc.mod.tif' %name, plot=False)
+    longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" %name)
 
 else:
-    fname = 'work/merged.tiff'
+    fname = 'work-%s/merged.tiff' %name
     comb = rasterio.open(fname)
     longs, lats = to_latlon(fname)
     comb_img = comb.read(1)
@@ -1047,28 +1228,28 @@ else:
 # use quadtree subsampling on gradient
 
 img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
-fname = 'work/asc.mod.tif'
+fname = 'work-%s/asc.mod.tif' %name
 #writeout(img_asc, fname, sc=scene_asc)
 longs_asc, lats_asc = to_latlon(fname)
 db =1
-longs_comb, lats_comb = to_latlon("work/merged.tiff")
+longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" % name)
 
-plot_on_map(db, comb_img.copy(), longs_comb, lats_comb)
+plot_on_map(db, comb_img.copy(), longs_comb, lats_comb, x0,y0,x1,y1)
 
 centers_bounding, coords_out, coords_box = bounding_box(comb_img)
-plot_on_kite_box(coords_box, scene_asc, longs_asc, lats_asc, longs_comb, lats_comb)
+plot_on_kite_box(coords_box, scene_asc, longs_asc, lats_asc, longs_comb, lats_comb, x0,y0,x1,y1)
 
-plot_on_kite_line(coords_out, scene_asc, longs_asc, lats_asc, longs_comb, lats_comb)
+plot_on_kite_line(coords_out, scene_asc, longs_asc, lats_asc, longs_comb, lats_comb, x0,y0,x1,y1)
 
 simp_fault, comp_fault = simplify(centers_bounding)
 
 db = dump_geojson(simp_fault, longs, lats) #check
-plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc)
+plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1)
 
 img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
-fname = 'work/dsc.mod.tif'
+fname = 'work-%s/dsc.mod.tif' % name
 longs_dsc, lats_dsc = to_latlon(fname)
-plot_on_kite_scatter(db, scene_dsc, longs_dsc, lats_dsc)
+plot_on_kite_scatter(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1)
 
 
 centers = skelotonize(comb_img)
