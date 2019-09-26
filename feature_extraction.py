@@ -110,7 +110,7 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0,y0,x1,y1):
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
-            map.imshow(data_dsc)
+            map.imshow(data_dsc, cmap="jet")
             gj = db
             faults = gj['features']
             coords = [feat['geometry']['coordinates'] for feat in faults]
@@ -175,7 +175,7 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, northcom
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
-            map.imshow(data_dsc)
+            map.imshow(data_dsc, cmap="jet")
             ax = plt.gca()
             coords_all = []
             for coords in coords_out:
@@ -252,23 +252,18 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings, eastco
             map.drawmapscale(num.min(eastings)+ratio_lon*0.25, num.min(northings)+ratio_lat*0.25, num.mean(eastings), num.mean(northings), 30)
             parallels = num.arange(num.min(northings),num.max(northings),0.2)
             meridians = num.arange(num.min(eastings),num.max(eastings),0.2)
-            map.imshow(data_dsc, cmap='jet')
+            map.imshow(data_dsc, cmap="jet")
             ax = plt.gca()
 
             coords_all = []
             for coords in coords_line:
-                print('coords',coords)
                 coords_boxes = []
                 for k in coords:
-                    print(k)
                     kx = k[1]
                     ky = k[0]
                     coords_boxes.append([eastcomb[int(kx)][int(ky)], northcomb[int(kx)][int(ky)]])
                 coords_all.append(coords_boxes)
             n = 0
-            print(coords_boxes)
-            print(coords_all)
-            print(len(coords_all))
             for coords in coords_all:
 
                 x1, y1 = map(coords[0][0], coords[0][1])
@@ -287,8 +282,6 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings, eastco
             for k in coords_out:
                 minr, minc, maxr, maxc = k[0], k[1], k[2], k[3]
 
-                print('coords', k)
-
                 kx = k[2]
                 ky = k[1]
                 coords_boxes.append([eastcomb[int(kx)][int(ky)], northcomb[int(kx)][int(ky)]])
@@ -297,7 +290,6 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings, eastco
                 coords_boxes.append([eastcomb[int(kx)][int(ky)], northcomb[int(kx)][int(ky)]])
 
             n = 0
-            print('boxes', coords_boxes)
 
             for coords in coords_out:
                 minc, minr = map(coords_boxes[0+n][0], coords_boxes[0+n][1])
@@ -381,7 +373,7 @@ def plot_on_map(db, scene, eastings, northings, x0,y0,x1,y1, kite_scene=False):
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
 
 
-            map.imshow(data_dsc)
+            map.imshow(data_dsc, cmap="seismic")
             ax = plt.gca()
 
             meridians = num.around(meridians, decimals=1, out=None)
@@ -623,6 +615,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         grad = grad/num.max(grad)
         grad_mask = filters.gaussian_filter(grad_mask, 20, order=0)
         grad_mask = grad_mask/num.max(grad_mask)
+        grad_mask, mag_mask, ori_mask = get_gradient(ls)
         image = coh_filt*grad
 
     if coh_sharp is True:
@@ -744,7 +737,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             ls_clear[ls_clear==0] = num.nan
 
 
-            map.imshow(ls_clear, cmap='jet')
+            map.imshow(ls_clear, cmap="jet")
 
             ax = plt.gca()
 
@@ -796,7 +789,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             ls_clear[ls_clear==0] = num.nan
 
 
-            map.imshow(ls_clear, cmap='jet')
+            map.imshow(ls_clear,  cmap="jet")
 
             ax = plt.gca()
 
@@ -848,7 +841,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             ls_clear[ls_clear==0] = num.nan
 
 
-            map.imshow(ls_clear, cmap='jet')
+            map.imshow(ls_clear, cmap="jet")
 
             ax = plt.gca()
 
