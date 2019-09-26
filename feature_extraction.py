@@ -37,6 +37,12 @@ import sys
 from mpl_toolkits.basemap import Basemap
 import glob
 import os
+from pyrocko.guts import GutsSafeLoader
+import yaml
+from pyrocko.guts import expand_stream_args
+
+def _load_all(stream, Loader=GutsSafeLoader):
+    return list(yaml.load_all(stream=stream, Loader=Loader))
 
 plt.switch_backend('Qt4Agg')
 
@@ -46,6 +52,11 @@ sz1=20
 sz2=20
 selem = rectangle(100,100)
 d2r = num.pi / 180.
+
+
+@expand_stream_args('r')
+def load_all(*args, **kwargs):
+    return _load_all(*args, **kwargs)
 
 
 def addArrow(ax, scene):
@@ -320,20 +331,13 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings, eastco
             plt.grid()
             if synthetic is True:
                 from pyrocko.gf import RectangularSource
-                source = RectangularSource(
-                            lat= 52.0,
-                            lon= 5.4,
-                            depth=3000.0,
-                            magnitude=6.0,
-                            strike=100.0,
-                            dip= 40.0,
-                            rake= -70.0,
-                            length= 20000.0,
-                            width=8000.0,
-                            velocity= 3500.0)
-                n, e = source.outline(cs='latlon').T
-                e, n = map(e,n)
-                ax.fill(e, n, color=(0, 0, 0), lw = 3)
+
+                srcs = load_all(filename='%s.yml' % name)
+
+                for source in srcs:
+                    n, e = source.outline(cs='latlon').T
+                    e, n = map(e,n)
+                    ax.fill(e, n, color=(0, 0, 0), lw = 3)
 
             addArrow(ax, scene)
             try:
