@@ -105,8 +105,12 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0,y0,x1,y1):
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
-            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+            try:
+                parallels = num.linspace(y0,y1, 16)
+                meridians = num.linspace(x0, x1, 16)
+            except:
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
@@ -170,8 +174,12 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, northcom
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
-            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+            try:
+                parallels = num.linspace(y0c,y1c, 16)
+                meridians = num.linspace(x0c, x1c, 16)
+            except:
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
@@ -250,8 +258,12 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings, eastco
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+ratio_lon*0.25, num.min(northings)+ratio_lat*0.25, num.mean(eastings), num.mean(northings), 30)
-            parallels = num.arange(num.min(northings),num.max(northings),0.2)
-            meridians = num.arange(num.min(eastings),num.max(eastings),0.2)
+            try:
+                parallels = num.linspace(y0,y1, 16)
+                meridians = num.linspace(x0, x1, 16)
+            except:
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
             map.imshow(data_dsc, cmap="jet")
             ax = plt.gca()
 
@@ -306,8 +318,12 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings, eastco
 
 
             #map.imshow(data_dsc,  extent = (x0, x1, y0, y1))
-            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
-            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+            try:
+                parallels = num.linspace(y0c ,y1c, 16)
+                meridians = num.linspace(x0c, x1c, 16)
+            except:
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
 
             meridians = num.around(meridians, decimals=1, out=None)
             parallels = num.around(parallels, decimals=1, out=None)
@@ -366,8 +382,13 @@ def plot_on_map(db, scene, eastings, northings, x0,y0,x1,y1, kite_scene=False):
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+ratio_lon*0.25, num.min(northings)+ratio_lat*0.25, num.mean(eastings), num.mean(northings), 30)
-            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
-            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+            try:
+                parallels = num.linspace(y0, y1, 16)
+                meridians = num.linspace(x0, x1, 16)
+            except:
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
@@ -565,6 +586,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         img_filt = filters.gaussian_filter(img_abs, 30, order=0)
         img_filt = img_filt/num.max(img_filt)
         image = pointy*img_filt
+        grad_mask, mag_mask, ori_mask = get_gradient(ls)
 
     if coh_sharp == 'basic':
 
@@ -675,8 +697,13 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
-            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+
+            try:
+                parallels = num.linspace(y0,y1, 16)
+                meridians = num.linspace(x0, x1, 16)
+            except:
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
@@ -726,8 +753,12 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
-            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+            try:
+                parallels = num.linspace(y0,y1, 16)
+                meridians = num.linspace(x0, x1, 16)
+            except:
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
             xpixels = 800
             if topo is True:
 
@@ -735,6 +766,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             #ls_dark = ls_dark*-1.
             ls_clear = grad.copy()
             ls_clear[ls_clear==0] = num.nan
+        #    ls_clear[ls_clear<num.max(ls_clear)*0.001] = num.nan
 
 
             map.imshow(ls_clear, cmap="jet")
@@ -779,14 +811,18 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
-            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+            try:
+                parallels = num.linspace(y0,y1, 16)
+                meridians = num.linspace(x0, x1, 16)
+            except:
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             #ls_dark = ls_dark*-1.
             ls_clear = grad_mask.copy()
-            ls_clear[ls_clear==0] = num.nan
+            ls_clear[ls_clear<num.max(ls_clear)*0.001] = num.nan
 
 
             map.imshow(ls_clear,  cmap="jet")
@@ -830,15 +866,19 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             ratio_lon = num.max(eastings)/num.min(eastings)
 
             map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
-            parallels = num.linspace((num.min(northings)),(num.max(northings)),8)
-            meridians = num.linspace((num.min(eastings)),(num.max(eastings)),8)
+            try:
+                parallels = num.linspace(y0,y1, 16)
+                meridians = num.linspace(x0, x1, 16)
+            except:
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
             xpixels = 800
             if topo is True:
 
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             #ls_dark = ls_dark*-1.
             ls_clear = image.copy()
-            ls_clear[ls_clear==0] = num.nan
+            ls_clear[ls_clear<num.max(ls_clear)*0.001] = num.nan
 
 
             map.imshow(ls_clear, cmap="jet")
@@ -1121,6 +1161,8 @@ def dump_geojson(fault, eastings, northings, tiff=False):
 
     return database
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("input: asc_path dsc_path minlat minlon maxlat maxlon --workdir=name m")
     try:
         x0 = float(sys.argv[3])
         y0 = float(sys.argv[4])
@@ -1150,7 +1192,7 @@ if __name__ == "__main__":
             plot = False
         if argv[0:10] == "--workdir=":
             name= argv[10:]
-        if argv == "--topography=True":
+        if argv == "--topography":
             topo = True
         if argv == "--synthetic":
             synthetic = True
