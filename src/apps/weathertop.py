@@ -7,6 +7,7 @@ from skimage.filters import rank, threshold_otsu
 from skimage.segmentation import clear_border
 from skimage.measure import label, regionprops, approximate_polygon, subdivide_polygon
 from skimage.color import label2rgb
+from skimage.draw import ellipse_perimeter
 import matplotlib.patches as mpatches
 from affine import Affine
 from scipy.ndimage import filters
@@ -255,7 +256,7 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
 
 
 def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
-                     eastcomb, northcomb, x0c, y0c, x1c, y1c, name,
+                     eastcomb, northcomb, x0c, y0c, x1c, y1c, name, ellipses,
                      synthetic=False, topo=False):
             scd = scene
             from mpl_toolkits.basemap import Basemap
@@ -290,19 +291,22 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
                     coords_boxes.append([eastcomb[int(kx)][int(ky)], northcomb[int(kx)][int(ky)]])
                 coords_all.append(coords_boxes)
             n = 0
-            for coords in coords_all:
+            for coords, ell in zip(coords_all, ellipses):
 
                 x1, y1 = map(coords[0][0], coords[0][1])
                 x1a, y1a = map(coords[1][0], coords[1][1])
                 x0, y0 = map(coords[2][0], coords[2][1])
                 x2, y2 = map(coords[3][0], coords[3][1])
                 n = n+1
-                print('x1', x1, y1)
                 ax.plot((x0, x1), (y0, y1), 'r--', linewidth=2.5)
                 ax.plot((x0, x1a), (y0, y1a), 'r--', linewidth=2.5)
 
-            #    ax.plot((x0, x2), (y0, y2), '-k', linewidth=2.5)
+                ax.plot((x0, x2), (y0, y2), '-r', linewidth=2.5)
                 ax.plot(x0, y0, '.g', markersize=15)
+                height = orthodrome.distance_accurate50m(coords[0][0], coords[0][1], coords[3][0], coords[3][1])
+                width = orthodrome.distance_accurate50m(coords[2][0], coords[2][1], coords[3][0], coords[3][1])
+                e = mpatches.Ellipse((x0,y0), width=width*2., height=height*2., angle=num.rad2deg(ell[4])+90, lw=2, edgecolor='b', fill=False)
+                ax.add_patch(e)
 
             coords_boxes = []
             for k in coords_out:
@@ -320,18 +324,13 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
             for coords in coords_out:
                 minc, minr = map(coords_boxes[0+n][0], coords_boxes[0+n][1])
                 maxc, maxr = map(coords_boxes[1+n][0], coords_boxes[1+n][1])
-                print(minr, minc, maxr, maxc)
-            #    plt.scatter(minc, minr, c='r')
-            #    plt.scatter(maxc, maxr)
 
-                n = n+1
+                n = n+2
                 rect = mpatches.Rectangle((minc, minr),  maxc - minc, maxr - minr,
                                                       fill=False, edgecolor='r', linewidth=2)
 
                 ax.add_patch(rect)
 
-
-            #map.imshow(data_dsc,  extent = (x0, x1, y0, y1))
             try:
                 parallels = num.linspace(y0c ,y1c, 16)
                 meridians = num.linspace(x0c, x1c, 16)
@@ -343,7 +342,6 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
             parallels = num.around(parallels, decimals=1, out=None)
 
             ticks = map(meridians, parallels)
-
 
             ax.set_xticks(ticks[0] )
             ax.set_yticks(ticks[1])
@@ -550,7 +548,6 @@ def get_binned_ori(phase, selem, bin=None):
 
 def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=False, loading = False, topo = False, synthetic = False, calc_statistics = False, subsample = False):
     selem = rectangle(100,100)
-
     if coh_sharp is False:
         ls = img.copy()
         ls[num.where(ls < 0)] = 1
@@ -578,9 +575,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         grad, mag, ori = get_gradient(img)
         grad2, mag2, or2 = get_gradient(grad)
         grad2 = grad2/num.max(grad2)
-        px_histograms = rank.windowed_histogram(grad2, selem, n_bins=4)
-        px_histograms = num.sum(px_histograms, axis=2)
-
         grad_mask_dark_filt = filters.gaussian_filter(ls_dark, 30, order=0)
         grad_mask_filt = filters.gaussian_filter(ls, 30, order=0)
 
@@ -606,8 +600,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         image = pointy*img_filt
         grad_mask, mag_mask, ori_mask = get_gradient(ls)
 
-    if coh_sharp == 'basic':
-
+    elif coh_sharp == 'basic':
         ls = img.copy()
         ls[num.where(ls < 0)] = 1
         ls[num.where(ls != 1)] = 0
@@ -618,19 +611,13 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         ls_dark[num.where(mask != 0)] = 0
         ls_dank = ls_dark.copy()
 
-
-
         quantized_img = ls
         grad_mask, mag_mask, ori_mask = get_gradient(quantized_img)
 
         grad, mag, ori = get_gradient(img)
         grad2, mag2, or2 = get_gradient(grad)
         grad2 = grad2/num.max(grad2)
-        px_histograms = rank.windowed_histogram(grad2, selem, n_bins=4)
-        px_histograms = num.sum(px_histograms, axis=2)
-
         grad_mask[grad_mask !=0] = 1
-
 
         pointy = grad*grad_mask
         thres = num.max(pointy)*0.1
@@ -648,7 +635,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         grad_mask = filters.gaussian_filter(grad_mask, 20, order=0)
         img2 = filters.gaussian_filter(img, 3, order=0)
 
-
         grad_mask, mag_mask, ori_mask = get_gradient(ls)
     #    grad_mask = filters.gaussian_filter(grad_mask, 20, order=0)
 
@@ -658,7 +644,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         grad_mask, mag_mask, ori_mask = get_gradient(ls)
         image = coh_filt*grad
 
-    if coh_sharp is True:
+    elif coh_sharp is True:
         ls = img.copy()
         ls[num.where(ls < 0)] = 1
         ls[num.where(ls != 1)] = 0
@@ -682,9 +668,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         grad,mag,ori = get_gradient(img)
         grad2,mag2,or2 = get_gradient(grad)
         grad2 = grad2/num.max(grad2)
-        px_histograms = rank.windowed_histogram(grad2, selem, n_bins=4)
-        px_histograms= num.sum(px_histograms, axis=2)
-
 
         grad_mask[grad_mask !=0] = 1
 
@@ -701,6 +684,65 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         image = pointy+pointy2
         coh[coh < num.mean(coh)]=0
         coh_filt = filters.gaussian_filter(coh,5,order=0)
+        image = image*coh_filt
+
+    elif coh_sharp == "ss":
+        ls = img.copy()
+        ls[num.where(ls < 0)] = 1
+        ls[num.where(ls != 1)] = 0
+        ls_dark = img.copy()
+        ls_dark[num.where(ls_dark > 0)] = 1
+        ls_dark[num.where(ls_dark != 1)] = 0
+        mask = filters.gaussian_filter(ls, 1, order=0)
+        ls_dark[num.where(mask != 0)] = 0
+        ls_dank = ls_dark.copy()
+
+
+        ls = get_contours(img)
+
+
+
+        quantized_img = ls
+        grad_mask, mag_mask, ori_mask = get_gradient(quantized_img)
+
+        grad, mag, ori = get_gradient(img)
+        grad2, mag2, or2 = get_gradient(grad)
+        grad2 = grad2/num.max(grad2)
+
+        grad_mask[grad_mask !=0] = 1
+
+
+        pointy = grad*grad_mask
+
+
+        thres = num.max(pointy)*0.1
+        pointy[pointy < thres] = 0
+        image = pointy.copy()
+
+        pointy2 = grad_mask/num.max(grad_mask)
+        thres = num.max(pointy2)*0.1
+        pointy2[pointy2 < thres] = 0
+        pointy2[pointy2 > 0] = 1
+        image = pointy+pointy2
+
+        # weight be coherence
+        coh[coh < num.mean(coh)]=0
+        coh_filt = filters.gaussian_filter(coh, 30, order=0)
+        image = image*coh_filt
+
+        thres = num.max(pointy)*0.1
+        pointy[pointy < thres] = 0
+        image = pointy.copy()
+
+        pointy2 = grad_mask/num.max(grad_mask)
+        thres = num.max(pointy2)*0.1
+        pointy2[pointy2 < thres] = 0
+        pointy2[pointy2 > 0] = 1
+        image = pointy+pointy2
+
+        # weight be coherence
+        coh[coh < num.mean(coh)]=0
+        coh_filt = filters.gaussian_filter(coh, 30, order=0)
         image = image*coh_filt
 
     if plot is True:
@@ -998,11 +1040,17 @@ def to_latlon(fname):
     longs, lats = transform(p1, p2, eastings, northings)
     return longs, lats
 
-def bounding_box(image):
+def bounding_box(image, sharp=False):
     thresh = threshold_otsu(image)
-
-    bw = closing(image > thresh, square(1))
-
+    if sharp == 'basic':
+        bw = image
+        area = 200
+    else:
+        bw = closing(image > thresh, square(1))
+        area = 400
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.imshow(bw)
+    plt.show()
     label_image = label(bw)
     image_label_overlay = label2rgb(label_image, image=image)
 
@@ -1013,8 +1061,10 @@ def bounding_box(image):
     centers = []
     coords_out = []
     coords_box = []
+    ellipses = []
+    strikes = []
     for region in regionprops(label_image):
-        if region.area >= 400: #check if nec.
+        if region.area >= area: #check if nec.
 
             coords = []
             minr, minc, maxr, maxc = region.bbox
@@ -1024,6 +1074,9 @@ def bounding_box(image):
 
             y0, x0 = region.centroid
             orientation = region.orientation
+            strikes.append(num.rad2deg(orientation)+90.)
+            ellipses.append([x0, y0, region.major_axis_length,
+                            region.minor_axis_length, orientation])
             coords_box.append([minr, minc, maxr, maxc])
             x1 = x0 + math.cos(orientation) * 0.5 * region.major_axis_length
             y1 = y0 - math.sin(orientation) * 0.5 * region.major_axis_length
@@ -1056,9 +1109,7 @@ def bounding_box(image):
     ax.set_axis_off()
     plt.show()
 
-    azi = orthodrome.azimuth(x1, y1, x1a, x1a)
-    d = 360+num.rad2deg(azi)
-    return centers, coords_out, coords_box, d
+    return centers, coords_out, coords_box, strikes, ellipses
 
 
 def skelotonize(image, plot=True):
@@ -1215,7 +1266,11 @@ def main():
             sharp = True
         if argv == "--basic":
             sharp = "basic"
+        if argv == "--ss":
+            sharp = "ss"
         if argv == "--loading=True":
+            loading = True
+        if argv == "--loading=true":
             loading = True
         if argv == "--plot=False":
             plot = False
@@ -1345,12 +1400,13 @@ def main():
         plot_on_map(db, comb_img.copy(), longs_comb, lats_comb, x0, y0, x1, y1,
                     synthetic=synthetic, topo=topo)
 
-    centers_bounding, coords_out, coords_box, strike = bounding_box(comb_img)
-    print("Strike of moment weighted centerline is:%s" % strike)
+    centers_bounding, coords_out, coords_box, strike, ellipses = bounding_box(comb_img,
+                                                                    sharp)
+    print("Strike(s) of moment weighted centerline(s) are :%s" % strike)
     if plot is True:
         plot_on_kite_box(coords_box, coords_out, scene_asc, longs_asc,
                          lats_asc, longs_comb, lats_comb, x0,y0,x1,y1,
-                         name,
+                         name, ellipses,
                          synthetic=synthetic, topo=topo)
 
         plot_on_kite_line(coords_out, scene_asc, longs_asc, lats_asc,
