@@ -1522,8 +1522,10 @@ def main():
     img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
     fname = 'work-%s/dsc.mod.tif' % name
     longs_dsc, lats_dsc = to_latlon(fname)
+
+    fname = 'work-%s/comb-' %name
     if plot is True:
-        plot_on_kite_scatter(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1, mind, maxd,
+        plot_on_kite_scatter(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1, mind, maxd, fname,
                              synthetic=synthetic, topo=topo,)
 
     centers = skelotonize(comb_img)
