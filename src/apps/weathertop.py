@@ -42,6 +42,13 @@ from pyrocko.guts import GutsSafeLoader
 import yaml
 from pyrocko.guts import expand_stream_args
 from weathertop.process.prob import rup_prop
+from matplotlib import rc
+rc('axes', linewidth=2)
+font = {'family' : 'normal',
+        'weight' : 'bold',
+        'size'   : 22}
+
+rc('font', **font)
 
 def _load_all(stream, Loader=GutsSafeLoader):
     return list(yaml.load_all(stream=stream, Loader=Loader))
@@ -95,6 +102,7 @@ def addArrow(ax, scene):
 
 
 def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind, maxd,
+                         fname,
                          synthetic=False, topo=False):
             scd = scene
             data_dsc= scd.displacement
@@ -163,11 +171,14 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind, m
             cax = divider.append_axes("right", size="5%", pad=0.05)
 
             plt.colorbar(cax=cax)
-            plt.show()
+            fig = plt.gcf()
+            fig.set_size_inches((11, 11), forward=False)
+            plt.savefig(fname+'scatter.svg', format='svg', dpi=300)
+            plt.close()
 
 
-def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, mind, maxd,
-                      northcomb, x0c, y0c, x1c, y1c,
+def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
+                      northcomb, x0c, y0c, x1c, y1c, mind, maxd, fname,
                       synthetic=False, topo=False):
             scd = scene
             data_dsc= scd.displacement
@@ -233,9 +244,6 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, mind, ma
             ax.set_yticklabels(parallels, fontsize=22)
             ax.tick_params(direction='out', length=6, width=4)
             plt.grid()
-
-            #map.drawparallels(parallels,labels=[1,0,0,0],fontsize=22)
-            #map.drawmeridians(meridians,labels=[1,1,0,1],fontsize=22, rotation=45)
             addArrow(ax, scene)
             try:
 
@@ -249,13 +257,16 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, mind, ma
             cax = divider.append_axes("right", size="5%", pad=0.05)
 
             plt.colorbar(cax=cax)
-            plt.show()
-
+            fig = plt.gcf()
+            fig.set_size_inches((11, 11), forward=False)
+            plt.savefig(fname+'line.svg', format='svg', dpi=300)
+            plt.close()
 
 
 
 def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
                      eastcomb, northcomb, x0c, y0c, x1c, y1c, name, ellipses, mind, maxd,
+                     fname,
                      synthetic=False, topo=False):
             scd = scene
             data_dsc= scd.displacement
@@ -303,7 +314,7 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
                 ax.plot(x0, y0, '.g', markersize=15)
                 height = orthodrome.distance_accurate50m(coords[0][0], coords[0][1], coords[3][0], coords[3][1])
                 width = orthodrome.distance_accurate50m(coords[2][0], coords[2][1], coords[3][0], coords[3][1])
-                e = mpatches.Ellipse((x0,y0), width=width*2., height=height*2., angle=num.rad2deg(ell[4])+90, lw=2, edgecolor='b', fill=False)
+                e = mpatches.Ellipse((x0,y0), width=width*2., height=height*2., angle=num.rad2deg(ell[4])+90, lw=2, edgecolor='purple', fill=False)
                 ax.add_patch(e)
 
             coords_boxes = []
@@ -372,19 +383,26 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
 
             plt.colorbar(cax=cax)
 
-            plt.show()
-
+            fig = plt.gcf()
+            fig.set_size_inches((11, 11), forward=False)
+            plt.savefig(fname+'box.svg', format='svg', dpi=300)
+            plt.close()
 
 
 def plot_on_map(db, scene, eastings, northings, x0, y0, x1, y1, mind, maxd,
-                synthetic=False, topo=False, kite_scene=False):
+                fname,
+                synthetic=False, topo=False, kite_scene=False, comb=False):
             if kite_scene is True:
                 scd = scene
                 data_dsc= scd.displacement
             else:
                 data_dsc= num.rot90(scene.T)
 
-            data_dsc[data_dsc==0] = num.nan
+            if comb is True:
+                data_dsc[data_dsc< num.max(data_dsc)*0.1] = num.nan
+
+            else:
+                data_dsc[data_dsc==0] = num.nan
 
             map = Basemap(projection='merc', llcrnrlon=num.min(eastings),llcrnrlat=num.min(northings),urcrnrlon=num.max(eastings),urcrnrlat=num.max(northings),
                           resolution='h', epsg=3395)
@@ -440,8 +458,10 @@ def plot_on_map(db, scene, eastings, northings, x0, y0, x1, y1, mind, maxd,
             cax = divider.append_axes("right", size="5%", pad=0.05)
 
             plt.colorbar(cax=cax)
-            plt.show()
-
+            fig = plt.gcf()
+            fig.set_size_inches((11, 11), forward=False)
+            plt.savefig(fname+'.svg', format='svg', dpi=300)
+            plt.close()
 
 def load(path, kite_scene=True, grid=False, path_cc=None):
 
@@ -542,7 +562,7 @@ def get_binned_ori(phase, selem, bin=None):
     return px_histograms, px_histogramsori
 
 
-def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=False, loading = False, topo = False, synthetic = False, calc_statistics = False, subsample = False):
+def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_sharp=False, loading = False, topo = False, synthetic = False, calc_statistics = False, subsample = False):
     selem = rectangle(100,100)
     plt_img = img.copy()
     if coh_sharp is False:
@@ -607,7 +627,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         mask = filters.gaussian_filter(ls, 1, order=0)
         ls_dark[num.where(mask != 0)] = 0
         ls_dank = ls_dark.copy()
-
+        ls_clear = ls.copy()
         quantized_img = ls
         grad_mask, mag_mask, ori_mask = get_gradient(quantized_img)
 
@@ -783,8 +803,10 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             except:
                 pass
             addArrow(ax, scene)
-
-            plt.show()
+            fig = plt.gcf()
+            fig.set_size_inches((11, 11), forward=False)
+            plt.savefig(fname+'mask.svg', format='svg', dpi=300)
+            plt.close()
 
 
             eastings = longs
@@ -843,7 +865,10 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             cax = divider.append_axes("right", size="5%", pad=0.05)
 
             plt.colorbar(cax=cax)
-            plt.show()
+            fig = plt.gcf()
+            fig.set_size_inches((11, 11), forward=False)
+            plt.savefig(fname+'grad.svg', format='svg', dpi=300)
+            plt.close()
 
             eastings = longs
             northings = lats
@@ -870,11 +895,12 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             #ls_dark = ls_dark*-1.
             ls_clear = grad_mask.copy()
-            ls_clear[ls_clear<num.max(ls_clear)*0.001] = num.nan
+            ls_clear[ls_clear<num.max(ls_clear)*0.0000001] = num.nan
             ls_clear[ls_clear>0] = 1
 
 
             map.imshow(ls_clear,  cmap="hot")
+            map.imshow(plt_img, cmap='seismic', alpha=0.4)
 
             ax = plt.gca()
 
@@ -897,11 +923,10 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             except:
                 pass
             addArrow(ax, scene)
-        #    divider = make_axes_locatable(ax)
-        #    cax = divider.append_axes("right", size="5%", pad=0.05)
-
-        #    plt.colorbar(cax=cax)
-            plt.show()
+            fig = plt.gcf()
+            fig.set_size_inches((11, 11), forward=False)
+            plt.savefig(fname+'mask_grad.svg', format='svg', dpi=300)
+            plt.close()
 
             eastings = longs
             northings = lats
@@ -959,7 +984,10 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             cax = divider.append_axes("right", size="5%", pad=0.05)
 
             plt.colorbar(cax=cax)
-            plt.show()
+            fig = plt.gcf()
+            fig.set_size_inches((11, 11), forward=False)
+            plt.savefig(fname+'filt.svg', format='svg', dpi=300)
+            plt.close()
 
             eastings = longs
             northings = lats
@@ -1017,7 +1045,10 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             cax = divider.append_axes("right", size="5%", pad=0.05)
 
             plt.colorbar(cax=cax)
-            plt.show()
+            fig = plt.gcf()
+            fig.set_size_inches((11, 11), forward=False)
+            plt.savefig(fname+'comb.svg', format='svg', dpi=300)
+            plt.close()
 
     image = image/num.max(image)
 
@@ -1089,7 +1120,7 @@ def bounding_box(image, sharp=False):
         area = 400
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.imshow(bw)
-    plt.show()
+    plt.close()
     label_image = label(bw)
     image_label_overlay = label2rgb(label_image, image=image)
 
@@ -1146,7 +1177,7 @@ def bounding_box(image, sharp=False):
             ax.plot(x0, y0, '.g', markersize=15)
             coords_out.append(coords)
     ax.set_axis_off()
-    plt.show()
+    plt.close()
 
     return centers, coords_out, coords_box, strikes, ellipses
 
@@ -1186,7 +1217,7 @@ def skelotonize(image, plot=True):
 
     ax.set_axis_off()
     plt.title('Fault outline skeleton', fontsize=22)
-    plt.show()
+    plt.close()
     return centers
 
 
@@ -1202,14 +1233,14 @@ def l1tf_prep(res_faults, plot=True):
             y.append(k[1])
     if plot is True:
         plt.scatter(y, x)
-        plt.show()
+        plt.close()
 
         plt.plot(x, y)
-        plt.show()
+        plt.close()
         plt.plot(x)
-        plt.show()
+        plt.close()
         plt.plot(y)
-        plt.show()
+        plt.close()
     return num.asarray(x)
 
 
@@ -1241,7 +1272,7 @@ def simplify(centers, plot=True):
         ax2.scatter(new_hand[:, 1], new_hand[:, 0])
     ax1.set_title('Simple line')
     ax2.set_title('More complexity')
-    plt.show()
+    plt.close()
     return simp_fault, comp_fault
 
 def df_to_geojson(df, eastings, northings, properties=None):
@@ -1338,11 +1369,13 @@ def main():
         fname = 'work-%s/asc.mod.tif' %name
         writeout(img_asc, fname, sc=scene_asc)
         longs_asc, lats_asc = to_latlon(fname)
+        fname = 'work-%s/asc-' %name
+
         img_asc = process(img_asc, coh_asc, longs_asc, lats_asc, scene_asc,
-                          x0, y0, x1, y1, plot=plot, coh_sharp=sharp,
+                          x0, y0, x1, y1, fname, plot=plot, coh_sharp=sharp,
                           loading=loading, topo=topo, synthetic=synthetic,
                           calc_statistics=calc_statistics, subsample=subsample)
-
+        fname = 'work-%s/asc.mod.tif' %name
         writeout(img_asc, fname, sc=scene_asc)
         db =1
         img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
@@ -1352,11 +1385,12 @@ def main():
         fname = 'work-%s/dsc.mod.tif' %name
         writeout(img_dsc, fname, sc=scene_dsc)
         longs_dsc, lats_dsc = to_latlon(fname)
+        fname = 'work-%s/dsc-' %name
         img_dsc = process(img_dsc, coh_dsc, longs_dsc, lats_dsc, scene_dsc,
-                          x0, y0, x1, y1, plot=plot, coh_sharp=sharp,
+                          x0, y0, x1, y1, fname, plot=plot, coh_sharp=sharp,
                           loading=loading, topo=topo, synthetic=synthetic,
                           calc_statistics=calc_statistics, subsample=subsample)
-
+        fname = 'work-%s/dsc.mod.tif' %name
         writeout(img_dsc, fname, sc=scene_dsc)
         db =1
         img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
@@ -1367,9 +1401,11 @@ def main():
         maxd = num.max(scene_dsc.displacement)
         maxd = num.max([maxa, maxd])
         if plot is True:
-            plot_on_map(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1,mind, maxd,
+            fname = 'work-%s/asc' %name
+            plot_on_map(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1,mind, maxd, fname,
                         synthetic=synthetic, topo=topo, kite_scene=True)
-            plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0, y0, x1, y1, mind, maxd,
+            fname = 'work-%s/dsc' %name
+            plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0, y0, x1, y1, mind, maxd, fname,
                         synthetic=synthetic, topo=topo, kite_scene=True)
 
 
@@ -1400,7 +1436,7 @@ def main():
             plt.figure(figsize=(sz1, sz2))
             plt.title('Loaded combined image')
             xr= plt.imshow(comb_img)
-            plt.show()
+            plt.close()
 
         if subsample is True:
             # Define the scene's frame
@@ -1456,27 +1492,31 @@ def main():
     maxdc = num.max(comb_img)
 
     if plot is True:
-        plot_on_map(db, comb_img.copy(), longs_comb, lats_comb, x0, y0, x1, y1, mindc, maxdc,
-                    synthetic=synthetic, topo=topo)
+        fname = 'work-%s/comb-' %name
+
+        plot_on_map(db, comb_img.copy(), longs_comb, lats_comb, x0, y0, x1, y1, mindc, maxdc, fname,
+                    synthetic=synthetic, topo=topo, comb=True)
 
     centers_bounding, coords_out, coords_box, strike, ellipses = bounding_box(comb_img,
                                                                     sharp)
     print("Strike(s) of moment weighted centerline(s) are :%s" % strike)
     if plot is True:
+        fname = 'work-%s/comb-' %name
+
         plot_on_kite_box(coords_box, coords_out, scene_asc, longs_asc,
                          lats_asc, longs_comb, lats_comb, x0,y0,x1,y1,
-                         name, ellipses, mind, maxd,
+                         name, ellipses, mind, maxd, fname,
                          synthetic=synthetic, topo=topo)
 
         plot_on_kite_line(coords_out, scene_asc, longs_asc, lats_asc,
-                          longs_comb, lats_comb, x0, y0, x1, y1, mind, maxd,
+                          longs_comb, lats_comb, x0, y0, x1, y1, mind, maxd, fname,
                           synthetic=synthetic, topo=topo)
 
     simp_fault, comp_fault = simplify(centers_bounding)
 
-    db = dump_geojson(simp_fault, longs, lats, name) #check
+    db = dump_geojson(simp_fault, longs_comb, lats_comb, name) #check
     if plot is True:
-        plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1, mind, maxd,
+        plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1, mind, maxd, fname,
                              synthetic=synthetic, topo=topo,)
 
     img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
