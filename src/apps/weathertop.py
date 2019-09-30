@@ -76,7 +76,7 @@ def addArrow(ax, scene):
         x=anchor_x-az_dx, y=anchor_y-az_dy,
         dx=az_dx, dy=az_dy,
         head_width=.025,
-        alpha=.5, fc='k',
+        alpha=.8, fc='k',
         head_starts_at_zero=False,
         length_includes_head=True,
         transform=ax.transAxes)
@@ -85,7 +85,7 @@ def addArrow(ax, scene):
         x=anchor_x-az_dx/2, y=anchor_y-az_dy/2,
         dx=los_dx, dy=los_dy,
         head_width=.02,
-        alpha=.5, fc='k',
+        alpha=.8, fc='k',
         head_starts_at_zero=False,
         length_includes_head=True,
         transform=ax.transAxes)
@@ -94,7 +94,7 @@ def addArrow(ax, scene):
     ax.add_artist(los_arrow)
 
 
-def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1,
+def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind, maxd,
                          synthetic=False, topo=False):
             scd = scene
             data_dsc= scd.displacement
@@ -119,7 +119,7 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1,
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
-            map.imshow(data_dsc, cmap="jet")
+            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd)
             gj = db
             faults = gj['features']
             coords = [feat['geometry']['coordinates'] for feat in faults]
@@ -166,11 +166,10 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1,
             plt.show()
 
 
-def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
+def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb, mind, maxd,
                       northcomb, x0c, y0c, x1c, y1c,
                       synthetic=False, topo=False):
             scd = scene
-            from mpl_toolkits.basemap import Basemap
             data_dsc= scd.displacement
 
             data_dsc[data_dsc==0] = num.nan
@@ -193,7 +192,7 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
-            map.imshow(data_dsc, cmap="jet")
+            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd)
             ax = plt.gca()
             coords_all = []
             for coords in coords_out:
@@ -256,10 +255,9 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
 
 
 def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
-                     eastcomb, northcomb, x0c, y0c, x1c, y1c, name, ellipses,
+                     eastcomb, northcomb, x0c, y0c, x1c, y1c, name, ellipses, mind, maxd,
                      synthetic=False, topo=False):
             scd = scene
-            from mpl_toolkits.basemap import Basemap
             data_dsc= scd.displacement
 
             data_dsc[data_dsc==0] = num.nan
@@ -279,7 +277,7 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
             except:
                 parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
                 meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
-            map.imshow(data_dsc, cmap="jet")
+            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd)
             ax = plt.gca()
 
             coords_all = []
@@ -378,9 +376,8 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
 
 
 
-def plot_on_map(db, scene, eastings, northings, x0, y0, x1, y1,
+def plot_on_map(db, scene, eastings, northings, x0, y0, x1, y1, mind, maxd,
                 synthetic=False, topo=False, kite_scene=False):
-            from mpl_toolkits.basemap import Basemap
             if kite_scene is True:
                 scd = scene
                 data_dsc= scd.displacement
@@ -409,8 +406,7 @@ def plot_on_map(db, scene, eastings, northings, x0, y0, x1, y1,
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
 
-
-            map.imshow(data_dsc, cmap="seismic")
+            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd)
             ax = plt.gca()
 
             meridians = num.around(meridians, decimals=1, out=None)
@@ -548,6 +544,7 @@ def get_binned_ori(phase, selem, bin=None):
 
 def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=False, loading = False, topo = False, synthetic = False, calc_statistics = False, subsample = False):
     selem = rectangle(100,100)
+    plt_img = img.copy()
     if coh_sharp is False:
         ls = img.copy()
         ls[num.where(ls < 0)] = 1
@@ -559,12 +556,10 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         ls_dark[num.where(mask != 0)] = 0
         ls_dank = ls_dark.copy()
 
-        ls = ls
+        ls_clear = ls.copy()
         ls_dark = ls_dank
 
-
         shape = num.shape(img)
-
 
         quantized_img = ls
         grad_mask, mag_mask, ori_mask = get_gradient(ls)
@@ -599,6 +594,8 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         img_filt = img_filt/num.max(img_filt)
         image = pointy*img_filt
         grad_mask, mag_mask, ori_mask = get_gradient(ls)
+        coh[coh < num.mean(coh)]=0
+        coh_filt = filters.gaussian_filter(coh, 5, order=0)
 
     elif coh_sharp == 'basic':
         ls = img.copy()
@@ -655,9 +652,8 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         ls_dark[num.where(mask != 0)] = 0
         ls_dank = ls_dark.copy()
 
-        ls = ls
         ls_dark = ls_dank
-
+        ls_clear = ls.copy()
         shape = num.shape(img)
 
         ls= get_contours(img)
@@ -683,7 +679,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         pointy2[pointy2 > 0] = 1
         image = pointy+pointy2
         coh[coh < num.mean(coh)]=0
-        coh_filt = filters.gaussian_filter(coh,5,order=0)
+        coh_filt = filters.gaussian_filter(coh, 5, order=0)
         image = image*coh_filt
 
     elif coh_sharp == "ss":
@@ -696,12 +692,8 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         mask = filters.gaussian_filter(ls, 1, order=0)
         ls_dark[num.where(mask != 0)] = 0
         ls_dank = ls_dark.copy()
-
-
+        ls_clear = ls.copy()
         ls = get_contours(img)
-
-
-
         quantized_img = ls
         grad_mask, mag_mask, ori_mask = get_gradient(quantized_img)
 
@@ -710,10 +702,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         grad2 = grad2/num.max(grad2)
 
         grad_mask[grad_mask !=0] = 1
-
-
         pointy = grad*grad_mask
-
 
         thres = num.max(pointy)*0.1
         pointy[pointy < thres] = 0
@@ -724,8 +713,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         pointy2[pointy2 < thres] = 0
         pointy2[pointy2 > 0] = 1
         image = pointy+pointy2
-
-        # weight be coherence
         coh[coh < num.mean(coh)]=0
         coh_filt = filters.gaussian_filter(coh, 30, order=0)
         image = image*coh_filt
@@ -739,8 +726,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
         pointy2[pointy2 < thres] = 0
         pointy2[pointy2 > 0] = 1
         image = pointy+pointy2
-
-        # weight be coherence
         coh[coh < num.mean(coh)]=0
         coh_filt = filters.gaussian_filter(coh, 30, order=0)
         image = image*coh_filt
@@ -770,9 +755,9 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             ls_dark[ls_dark==0] = num.nan
-            ls_clear = ls.copy()
             ls_clear[ls_clear==0] = num.nan
 
+            #map.imshow(plt_img, cmap='seismic', alpha=0.4)
 
             map.imshow(ls_dark, cmap='jet')
             map.imshow(ls_clear)
@@ -802,7 +787,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             plt.show()
 
 
-    if plot is True:
             eastings = longs
             northings = lats
             fig = plt.figure()
@@ -825,13 +809,11 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
                 meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
             xpixels = 800
             if topo is True:
-
-                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
-            #ls_dark = ls_dark*-1.
+                map.arcgisimage(service='World_Shaded_Relief',
+                                xpixels=xpixels, verbose= False)
             ls_clear = grad.copy()
             ls_clear[ls_clear==0] = num.nan
         #    ls_clear[ls_clear<num.max(ls_clear)*0.001] = num.nan
-
 
             map.imshow(ls_clear, cmap="jet")
 
@@ -863,7 +845,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             plt.colorbar(cax=cax)
             plt.show()
 
-    if plot is True:
             eastings = longs
             northings = lats
             fig = plt.figure()
@@ -890,9 +871,68 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             #ls_dark = ls_dark*-1.
             ls_clear = grad_mask.copy()
             ls_clear[ls_clear<num.max(ls_clear)*0.001] = num.nan
+            ls_clear[ls_clear>0] = 1
 
 
-            map.imshow(ls_clear,  cmap="jet")
+            map.imshow(ls_clear,  cmap="hot")
+
+            ax = plt.gca()
+
+            meridians = num.around(meridians, decimals=1, out=None)
+            parallels = num.around(parallels, decimals=1, out=None)
+
+            ticks = map(meridians, parallels)
+
+            ax.set_xticks(ticks[0])
+            ax.set_yticks(ticks[1])
+            ax.set_xticklabels(meridians, rotation=45, fontsize=22)
+            ax.set_yticklabels(parallels, fontsize=22)
+            ax.tick_params(direction='out', length=6, width=4)
+            plt.grid()
+            try:
+                x0c, y0c = map(x0, y0)
+                x1c, y1c = map(x1, y1)
+                ax.set_xlim([x0c, x1c])
+                ax.set_ylim([y0c, y1c])
+            except:
+                pass
+            addArrow(ax, scene)
+        #    divider = make_axes_locatable(ax)
+        #    cax = divider.append_axes("right", size="5%", pad=0.05)
+
+        #    plt.colorbar(cax=cax)
+            plt.show()
+
+            eastings = longs
+            northings = lats
+            fig = plt.figure()
+
+            map = Basemap(projection='merc', llcrnrlon=num.min(eastings),llcrnrlat=num.min(northings),urcrnrlon=num.max(eastings),urcrnrlat=num.max(northings),
+                          resolution='h', epsg=3395)
+
+            ratio_lat = num.max(northings)/num.min(northings)
+            ratio_lon = num.max(eastings)/num.min(eastings)
+            try:
+                map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            except:
+                map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
+
+            try:
+                parallels = num.linspace(y0,y1, 16)
+                meridians = num.linspace(x0, x1, 16)
+            except:
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+            xpixels = 800
+            if topo is True:
+
+                map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
+            #ls_dark = ls_dark*-1.
+            ls_clear = coh_filt.copy()
+            #ls_clear[ls_clear<num.max(ls_clear)*0.01] = num.nan
+
+
+            map.imshow(ls_clear, cmap="seismic")
 
             ax = plt.gca()
 
@@ -921,7 +961,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
             plt.colorbar(cax=cax)
             plt.show()
 
-    if plot is True:
             eastings = longs
             northings = lats
             fig = plt.figure()
@@ -948,10 +987,10 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             #ls_dark = ls_dark*-1.
             ls_clear = image.copy()
-            ls_clear[ls_clear<num.max(ls_clear)*0.001] = num.nan
+            ls_clear[ls_clear<num.max(ls_clear)*0.01] = num.nan
 
 
-            map.imshow(ls_clear, cmap="jet")
+            map.imshow(ls_clear, cmap="hot")
 
             ax = plt.gca()
 
@@ -1307,8 +1346,7 @@ def main():
         writeout(img_asc, fname, sc=scene_asc)
         db =1
         img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
-        plot_on_map(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1,
-                    synthetic=synthetic, topo=topo, kite_scene=True)
+
 
         img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
         fname = 'work-%s/dsc.mod.tif' %name
@@ -1322,8 +1360,17 @@ def main():
         writeout(img_dsc, fname, sc=scene_dsc)
         db =1
         img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
-        plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0, y0, x1, y1,
-                    synthetic=synthetic, topo=topo, kite_scene=True)
+        minda = num.min(scene_asc.displacement)
+        mindd = num.min(scene_dsc.displacement)
+        mind = num.min([minda, mindd])
+        maxa = num.max(scene_asc.displacement)
+        maxd = num.max(scene_dsc.displacement)
+        maxd = num.max([maxa, maxd])
+        if plot is True:
+            plot_on_map(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1,mind, maxd,
+                        synthetic=synthetic, topo=topo, kite_scene=True)
+            plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0, y0, x1, y1, mind, maxd,
+                        synthetic=synthetic, topo=topo, kite_scene=True)
 
 
         comb_img = combine('work-%s/asc.mod.tif' % name, 'work-%s/dsc.mod.tif' %name, name, plot=False)
@@ -1339,6 +1386,15 @@ def main():
         dN = norths[1]-norths[0]
         ll_long = num.min(longs)
         ll_lat = num.min(lats)
+
+        img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
+        img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
+        minda = num.min(scene_asc.displacement)
+        mindd = num.min(scene_dsc.displacement)
+        mind = num.min([minda, mindd])
+        maxa = num.max(scene_asc.displacement)
+        maxd = num.max(scene_dsc.displacement)
+        maxd = num.max([maxa, maxd])
 
         if plot is True:
             plt.figure(figsize=(sz1, sz2))
@@ -1396,8 +1452,11 @@ def main():
     longs_asc, lats_asc = to_latlon(fname)
     db =1
     longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" % name)
+    mindc = num.min(comb_img)
+    maxdc = num.max(comb_img)
+
     if plot is True:
-        plot_on_map(db, comb_img.copy(), longs_comb, lats_comb, x0, y0, x1, y1,
+        plot_on_map(db, comb_img.copy(), longs_comb, lats_comb, x0, y0, x1, y1, mindc, maxdc,
                     synthetic=synthetic, topo=topo)
 
     centers_bounding, coords_out, coords_box, strike, ellipses = bounding_box(comb_img,
@@ -1406,25 +1465,25 @@ def main():
     if plot is True:
         plot_on_kite_box(coords_box, coords_out, scene_asc, longs_asc,
                          lats_asc, longs_comb, lats_comb, x0,y0,x1,y1,
-                         name, ellipses,
+                         name, ellipses, mind, maxd,
                          synthetic=synthetic, topo=topo)
 
         plot_on_kite_line(coords_out, scene_asc, longs_asc, lats_asc,
-                          longs_comb, lats_comb, x0, y0, x1, y1,
+                          longs_comb, lats_comb, x0, y0, x1, y1, mind, maxd,
                           synthetic=synthetic, topo=topo)
 
     simp_fault, comp_fault = simplify(centers_bounding)
 
     db = dump_geojson(simp_fault, longs, lats, name) #check
     if plot is True:
-        plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1,
+        plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1, mind, maxd,
                              synthetic=synthetic, topo=topo,)
 
     img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
     fname = 'work-%s/dsc.mod.tif' % name
     longs_dsc, lats_dsc = to_latlon(fname)
     if plot is True:
-        plot_on_kite_scatter(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1,
+        plot_on_kite_scatter(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1, mind, maxd,
                              synthetic=synthetic, topo=topo,)
 
     centers = skelotonize(comb_img)
