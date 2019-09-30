@@ -1,7 +1,7 @@
 import numpy as num
 import cv2
 from skimage.morphology import rectangle, closing, square
-import weathertop.process.contour
+import weathertop.process.contour as contour
 from matplotlib import pyplot as plt
 from skimage.filters import rank, threshold_otsu
 from skimage.segmentation import clear_border
@@ -104,8 +104,11 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1,
                           resolution='h', epsg=3395)
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
+            try:
+                map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            except:
+                map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
-            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
             try:
                 parallels = num.linspace(y0,y1, 16)
                 meridians = num.linspace(x0, x1, 16)
@@ -175,8 +178,11 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
                           resolution='h', epsg=3395)
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
+            try:
+                map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            except:
+                map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
-            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
             try:
                 parallels = num.linspace(y0c,y1c, 16)
                 meridians = num.linspace(x0c, x1c, 16)
@@ -261,8 +267,11 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
                           resolution='h', epsg=3395)
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
+            try:
+                map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            except:
+                map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
-            map.drawmapscale(num.min(eastings)+ratio_lon*0.25, num.min(northings)+ratio_lat*0.25, num.mean(eastings), num.mean(northings), 30)
             try:
                 parallels = num.linspace(y0,y1, 16)
                 meridians = num.linspace(x0, x1, 16)
@@ -386,8 +395,11 @@ def plot_on_map(db, scene, eastings, northings, x0, y0, x1, y1,
                           resolution='h', epsg=3395)
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
+            try:
+                map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            except:
+                map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
-            map.drawmapscale(num.min(eastings)+ratio_lon*0.25, num.min(northings)+ratio_lat*0.25, num.mean(eastings), num.mean(northings), 30)
             try:
                 parallels = num.linspace(y0, y1, 16)
                 meridians = num.linspace(x0, x1, 16)
@@ -701,8 +713,10 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
 
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
-
-            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            try:
+                map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            except:
+                map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
                 parallels = num.linspace(y0,y1, 16)
@@ -756,8 +770,11 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
 
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
+            try:
+                map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            except:
+                map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
-            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
             try:
                 parallels = num.linspace(y0,y1, 16)
                 meridians = num.linspace(x0, x1, 16)
@@ -814,8 +831,11 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
 
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
+            try:
+                map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            except:
+                map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
-            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
             try:
                 parallels = num.linspace(y0,y1, 16)
                 meridians = num.linspace(x0, x1, 16)
@@ -869,8 +889,11 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, plot=True, coh_sharp=F
 
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
+            try:
+                map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
+            except:
+                map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
-            map.drawmapscale(num.min(eastings)+2.1+ratio_lon*0.25, num.min(northings)+ratio_lat*0.18, num.mean(eastings), num.mean(northings), 30, fontsize=18, barstyle='fancy')
             try:
                 parallels = num.linspace(y0,y1, 16)
                 meridians = num.linspace(x0, x1, 16)
@@ -1039,7 +1062,6 @@ def bounding_box(image):
 
 
 def skelotonize(image, plot=True):
-    # apply threshold
     thresh = threshold_otsu(image)
     bw = closing(image > thresh, square(2))
     cleared = clear_border(bw)
@@ -1051,7 +1073,7 @@ def skelotonize(image, plot=True):
     polys = []
     centers = []
     for region in regionprops(label_image):
-        if region.area >= 100: #check if nec.
+        if region.area >= 400: #check if nec.
             coords = num.array(region.coords)
             poly = geometry.Polygon([[p[0], p[1]] for p in coords])
             polys.append(poly)
@@ -1066,7 +1088,7 @@ def skelotonize(image, plot=True):
                 centers.append(center)
             except:
                 pass
-        if region.area >= 100: #check; should be scaled to pixel size?
+        if region.area >= 400: #check; should be scaled to pixel size?
             minr, minc, maxr, maxc = region.bbox
             rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
                                       fill=False, edgecolor='red', linewidth=2)
