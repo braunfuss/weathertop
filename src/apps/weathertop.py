@@ -1330,6 +1330,7 @@ def main():
     synthetic = False
     calc_statistics = False
     subsample = False
+    dump_grid = False
 
     for argv in sys.argv:
         if argv == "--sharp":
@@ -1345,7 +1346,7 @@ def main():
         if argv == "--plot=False":
             plot = False
         if argv[0:10] == "--workdir=":
-            name= argv[10:]
+            name = argv[10:]
         if argv == "--topography":
             topo = True
         if argv == "--synthetic":
@@ -1354,7 +1355,8 @@ def main():
             calc_statistics=True
         if argv == "--subsample":
             subsample = True
-
+        if argv == "--grond_export":
+            dump_grid = True
     if loading is False:
 
         img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
@@ -1490,6 +1492,26 @@ def main():
     longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" % name)
     mindc = num.min(comb_img)
     maxdc = num.max(comb_img)
+    if dump_grid is True:
+        from scipy import signal
+        es = longs_comb.flatten()
+        es_resamp = signal.decimate(es, 20)
+
+        ns = lats_comb.flatten()
+        ns_resamp = signal.decimate(ns, 20)
+
+        comb_img_grid = comb_img.flatten()
+        comb_img_grid_resamp = signal.decimate(comb_img_grid, 20)
+        fobj_cum = open(os.path.join('work-%s/grad_grid.ASC' % name),'w')
+        for x, y, sembcums in zip(es, ns, comb_img_grid.flatten()):
+            fobj_cum.write('%.2f %.2f %.20f\n' % (x, y, sembcums))
+        fobj_cum.close()
+
+
+        fobj_cum = open(os.path.join('work-%s/grad_grid_resam.ASC' %s),'w')
+        for x, y, sembcums in zip(es_resamp, ns_resamp, comb_img_grid_resamp):
+            fobj_cum.write('%.2f %.2f %.20f\n' % (x, y, sembcums))
+        fobj_cum.close()
 
     if plot is True:
         fname = 'work-%s/comb-' %name
