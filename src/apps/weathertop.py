@@ -1015,6 +1015,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             #ls_dark = ls_dark*-1.
             ls_clear = image.copy()
+            ls_clear = ls_clear / num.sqrt(num.sum(ls_clear**2))
             ls_clear[ls_clear<num.max(ls_clear)*0.01] = num.nan
 
 
@@ -1050,7 +1051,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
             plt.savefig(fname+'comb.svg', format='svg', dpi=300)
             plt.close()
 
-    image = image/num.max(image)
+    image = image / num.sqrt(num.sum(image**2))
 
     return image
 
