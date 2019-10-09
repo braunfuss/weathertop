@@ -676,13 +676,13 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
         ls_clear = ls.copy()
         shape = num.shape(img)
 
-        ls= get_contours(img)
+        ls = get_contours(img)
         quantized_img= ls
-        grad_mask,mag_mask,ori_mask = get_gradient(quantized_img)
+        grad_mask, mag_mask,ori_mask = get_gradient(quantized_img)
         selem = rectangle(100,100)
 
-        grad,mag,ori = get_gradient(img)
-        grad2,mag2,or2 = get_gradient(grad)
+        grad, mag, ori = get_gradient(img)
+        grad2, mag2, or2 = get_gradient(grad)
         grad2 = grad2/num.max(grad2)
 
         grad_mask[grad_mask !=0] = 1
@@ -698,7 +698,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
         pointy2[pointy2 < thres] = 0
         pointy2[pointy2 > 0] = 1
         image = pointy+pointy2
-        coh[coh < num.mean(coh)]=0
+        coh[coh < num.mean(coh)] = 0
         coh_filt = filters.gaussian_filter(coh, 5, order=0)
         image = image*coh_filt
 
