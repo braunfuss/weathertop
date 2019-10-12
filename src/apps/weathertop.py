@@ -43,6 +43,8 @@ import yaml
 from pyrocko.guts import expand_stream_args
 from weathertop.process.prob import rup_prop
 from matplotlib import rc
+from pyrocko.client import catalog
+
 rc('axes', linewidth=2)
 font = {'family' : 'normal',
         'weight' : 'bold',
@@ -119,11 +121,11 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind, m
                 map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
-                parallels = num.linspace(y0,y1, 16)
-                meridians = num.linspace(x0, x1, 16)
+                parallels = num.linspace(y0,y1,22)
+                meridians = num.linspace(x0, x1,22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
@@ -195,11 +197,11 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
                 map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
-                parallels = num.linspace(y0c,y1c, 16)
-                meridians = num.linspace(x0c, x1c, 16)
+                parallels = num.linspace(y0c,y1c,22)
+                meridians = num.linspace(x0c, x1c,22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
@@ -283,11 +285,11 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
                 map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
-                parallels = num.linspace(y0,y1, 16)
-                meridians = num.linspace(x0, x1, 16)
+                parallels = num.linspace(y0,y1,22)
+                meridians = num.linspace(x0, x1,22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
             map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd)
             ax = plt.gca()
 
@@ -341,11 +343,11 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
                 ax.add_patch(rect)
 
             try:
-                parallels = num.linspace(y0c ,y1c, 16)
-                meridians = num.linspace(x0c, x1c, 16)
+                parallels = num.linspace(y0c ,y1c,22)
+                meridians = num.linspace(x0c, x1c,22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
 
             meridians = num.around(meridians, decimals=1, out=None)
             parallels = num.around(parallels, decimals=1, out=None)
@@ -414,11 +416,11 @@ def plot_on_map(db, scene, eastings, northings, x0, y0, x1, y1, mind, maxd,
                 map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
-                parallels = num.linspace(y0, y1, 16)
-                meridians = num.linspace(x0, x1, 16)
+                parallels = num.linspace(y0, y1,22)
+                meridians = num.linspace(x0, x1,22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
 
             xpixels = 800
             if topo is True:
@@ -472,6 +474,7 @@ def load(path, kite_scene=True, grid=False, path_cc=None):
         where_are_NaNs = num.isnan(img)
         img[where_are_NaNs] = 0
         coh = img # TODO load in coherence
+        dates = [sc.meta.time_slave, sc.meta.time_master]
 
     if grid is True:
         unw = Image.open(path)
@@ -483,8 +486,9 @@ def load(path, kite_scene=True, grid=False, path_cc=None):
         where_are_NaNs = num.isnan(coh)
         coh[where_are_NaNs] = 0
         sc = None
+        dates = None
 
-    return img, coh, sc
+    return img, coh, sc, dates
 
 
 def read_float(filen, width):
@@ -716,6 +720,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
         ls = get_contours(img)
         quantized_img = ls
         grad_mask, mag_mask, ori_mask = get_gradient(quantized_img)
+#        grad_mask, mag_mask, ori_mask = get_gradient(ls)
 
         grad, mag, ori = get_gradient(img)
         grad2, mag2, or2 = get_gradient(grad)
@@ -735,7 +740,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
         image = pointy+pointy2
         coh[coh < num.mean(coh)]=0
         coh_filt = filters.gaussian_filter(coh, 30, order=0)
-        image = image*coh_filt
+        #image = image*coh_filt
 
         thres = num.max(pointy)*0.1
         pointy[pointy < thres] = 0
@@ -748,6 +753,11 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
         image = pointy+pointy2
         coh[coh < num.mean(coh)]=0
         coh_filt = filters.gaussian_filter(coh, 30, order=0)
+        grad = filters.gaussian_filter(grad, 30, order=0)
+#        image = image / num.sqrt(num.sum(image**2))
+#        coh_filt = image / num.sqrt(num.sum(coh_filt**2))
+#        grad = image / num.sqrt(num.sum(grad**2))
+
         image = image*coh_filt
 
     if plot is True:
@@ -766,11 +776,11 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
                 map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
-                parallels = num.linspace(y0,y1, 16)
-                meridians = num.linspace(x0, x1, 16)
+                parallels = num.linspace(y0,y1,22)
+                meridians = num.linspace(x0, x1,22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
@@ -808,7 +818,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
             plt.savefig(fname+'mask.svg', format='svg', dpi=300)
             plt.close()
 
-
             eastings = longs
             northings = lats
             fig = plt.figure()
@@ -824,11 +833,11 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
                 map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
-                parallels = num.linspace(y0,y1, 16)
-                meridians = num.linspace(x0, x1, 16)
+                parallels = num.linspace(y0,y1,22)
+                meridians = num.linspace(x0, x1,22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief',
@@ -885,19 +894,20 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
                 map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
-                parallels = num.linspace(y0,y1, 16)
-                meridians = num.linspace(x0, x1, 16)
+                parallels = num.linspace(y0,y1,22)
+                meridians = num.linspace(x0, x1,22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
             #ls_dark = ls_dark*-1.
             ls_clear = grad_mask.copy()
             ls_clear[ls_clear<num.max(ls_clear)*0.0000001] = num.nan
-            ls_clear[ls_clear>0] = 1
 
+            #grad2, mag2, or2 = get_gradient(grad_mask)
+            #grad2[grad2<num.max(grad2)*0.1] = num.nan
 
             map.imshow(ls_clear,  cmap="hot")
             map.imshow(plt_img, cmap='seismic', alpha=0.4)
@@ -943,11 +953,11 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
                 map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
-                parallels = num.linspace(y0,y1, 16)
-                meridians = num.linspace(x0, x1, 16)
+                parallels = num.linspace(y0,y1,22)
+                meridians = num.linspace(x0, x1,22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
             xpixels = 800
             if topo is True:
 
@@ -1004,11 +1014,11 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
                 map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
-                parallels = num.linspace(y0,y1, 16)
-                meridians = num.linspace(x0, x1, 16)
+                parallels = num.linspace(y0,y1,22)
+                meridians = num.linspace(x0, x1,22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),16)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),16)
+                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
+                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
             xpixels = 800
             if topo is True:
 
@@ -1111,17 +1121,14 @@ def to_latlon(fname):
     longs, lats = transform(p1, p2, eastings, northings)
     return longs, lats
 
-def bounding_box(image, sharp=False):
+
+def bounding_box(image, area, sharp=False):
     thresh = threshold_otsu(image)
-    if sharp == 'basic':
-        bw = image
-        area = 200
-    else:
-        bw = closing(image > thresh, square(1))
-        area = 400
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.imshow(bw)
-    plt.close()
+
+    bw = closing(image > thresh, square(1))
+    if area is None:
+        area = 900
+
     label_image = label(bw)
     image_label_overlay = label2rgb(label_image, image=image)
 
@@ -1360,31 +1367,37 @@ def main():
             dump_grid = True
     if loading is False:
 
-        img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
+        img_asc, coh_asc, scene_asc, dates_asc = load(sys.argv[1],
+                                                      kite_scene=True)
 
         try:
-            os.mkdir('work-%s' %name)
+            os.mkdir('work-%s' % name)
         except:
             pass
-        files = glob.glob('work-%s/*' %name)
+        files = glob.glob('work-%s/*' % name)
         for f in files:
             os.remove(f)
-        fname = 'work-%s/asc.mod.tif' %name
+        fname = 'work-%s/asc.mod.tif' % name
         writeout(img_asc, fname, sc=scene_asc)
         longs_asc, lats_asc = to_latlon(fname)
-        fname = 'work-%s/asc-' %name
+        fname = 'work-%s/asc-' % name
 
         img_asc = process(img_asc, coh_asc, longs_asc, lats_asc, scene_asc,
                           x0, y0, x1, y1, fname, plot=plot, coh_sharp=sharp,
                           loading=loading, topo=topo, synthetic=synthetic,
                           calc_statistics=calc_statistics, subsample=subsample)
-        fname = 'work-%s/asc.mod.tif' %name
+        fname = 'work-%s/asc.mod.tif' % name
         writeout(img_asc, fname, sc=scene_asc)
         db =1
-        img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
+        dates = []
+        img_asc, coh_asc, scene_asc, dates_asc = load(sys.argv[1],
+                                                      kite_scene=True)
+        dates.append(dates_asc)
 
+        img_dsc, coh_dsc, scene_dsc, dates_dsc = load(sys.argv[2],
+                                                      kite_scene=True)
+        dates.append(dates_dsc)
 
-        img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
         fname = 'work-%s/dsc.mod.tif' %name
         writeout(img_dsc, fname, sc=scene_dsc)
         longs_dsc, lats_dsc = to_latlon(fname)
@@ -1395,14 +1408,18 @@ def main():
                           calc_statistics=calc_statistics, subsample=subsample)
         fname = 'work-%s/dsc.mod.tif' %name
         writeout(img_dsc, fname, sc=scene_dsc)
+
         db =1
-        img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
+        img_dsc, coh_dsc, scene_dsc, dates = load(sys.argv[2], kite_scene=True)
+
+
         minda = num.min(scene_asc.displacement)
         mindd = num.min(scene_dsc.displacement)
         mind = num.min([minda, mindd])
         maxa = num.max(scene_asc.displacement)
         maxd = num.max(scene_dsc.displacement)
         maxd = num.max([maxa, maxd])
+
         if plot is True:
             fname = 'work-%s/asc' %name
             plot_on_map(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1,mind, maxd, fname,
@@ -1425,9 +1442,13 @@ def main():
         dN = norths[1]-norths[0]
         ll_long = num.min(longs)
         ll_lat = num.min(lats)
+        dates = []
+        img_asc, coh_asc, scene_asc, dates_asc = load(sys.argv[1],
+                                                      kite_scene=True)
+        img_dsc, coh_dsc, scene_dsc, dates_dsc = load(sys.argv[2],
+                                                      kite_scene=True)
 
-        img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
-        img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
+
         minda = num.min(scene_asc.displacement)
         mindd = num.min(scene_dsc.displacement)
         mind = num.min([minda, mindd])
@@ -1485,7 +1506,7 @@ def main():
     #comb_img = process(img_asc, coh_asc, plot=True)
     # use quadtree subsampling on gradient
 
-    img_asc, coh_asc, scene_asc = load(sys.argv[1], kite_scene=True)
+    img_asc, coh_asc, scene_asc, dates = load(sys.argv[1], kite_scene=True)
     fname = 'work-%s/asc.mod.tif' %name
     #writeout(img_asc, fname, sc=scene_asc)
     longs_asc, lats_asc = to_latlon(fname)
@@ -1493,6 +1514,26 @@ def main():
     longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" % name)
     mindc = num.min(comb_img)
     maxdc = num.max(comb_img)
+
+    try:
+        global_cmt_catalog = catalog.GlobalCMT()
+
+        events = global_cmt_catalog.get_events(
+            time_range=(num.min(dates), num.max(dates)),
+            magmin=2.,
+            latmin=num.min(lats_comb),
+            latmax=num.max(lats_comb),
+            lonmin=num.min(longs_comb),
+            lonmax=num.max(longs_comb))
+
+        areas = []
+
+        for ev in events:
+            areas.append(num.cbrt(ev.moment_tensor.moment)/1000)
+        area = num.max(areas)
+    except:
+        area = 400
+
     if dump_grid is True:
         from scipy import signal
         es = longs_comb.flatten()
@@ -1521,8 +1562,9 @@ def main():
                     synthetic=synthetic, topo=topo, comb=True)
 
     centers_bounding, coords_out, coords_box, strike, ellipses = bounding_box(comb_img,
-                                                                    sharp)
+                                                                    area, sharp)
     print("Strike(s) of moment weighted centerline(s) are :%s" % strike)
+
     if plot is True:
         fname = 'work-%s/comb-' %name
 
@@ -1542,7 +1584,7 @@ def main():
         plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1, mind, maxd, fname,
                              synthetic=synthetic, topo=topo,)
 
-    img_dsc, coh_dsc, scene_dsc = load(sys.argv[2], kite_scene=True)
+    img_dsc, coh_dsc, scene_dsc, dates = load(sys.argv[2], kite_scene=True)
     fname = 'work-%s/dsc.mod.tif' % name
     longs_dsc, lats_dsc = to_latlon(fname)
 
