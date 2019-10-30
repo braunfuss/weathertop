@@ -44,6 +44,18 @@ from pyrocko.guts import expand_stream_args
 from weathertop.process.prob import rup_prop
 from matplotlib import rc
 from pyrocko.client import catalog
+import matplotlib as mpl
+
+class MidpointNormalize(mpl.colors.Normalize):
+    """Normalise the colorbar."""
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        mpl.colors.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return num.ma.masked_array(num.interp(value, x, y), num.isnan(value))
+
 
 rc('axes', linewidth=2)
 font = {'family' : 'normal',
@@ -129,7 +141,7 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind, m
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
-            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd)
+            map.imshow(data_dsc, cmap="seismic", alpha=0.8, norm=MidpointNormalize(mind, maxd, 0.))
             gj = db
             faults = gj['features']
             coords = [feat['geometry']['coordinates'] for feat in faults]
@@ -197,15 +209,15 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
                 map.drawmapscale(num.min(eastings)+0.05, num.min(northings)+0.04, num.mean(eastings), num.mean(northings), 10, fontsize=18, barstyle='fancy')
 
             try:
-                parallels = num.linspace(y0c,y1c,22)
-                meridians = num.linspace(x0c, x1c,22)
+                parallels = num.linspace(y0c, y1c, 22)
+                meridians = num.linspace(x0c, x1c, 22)
             except:
                 parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
                 meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
             xpixels = 800
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
-            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd)
+            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd, alpha=0.8)
             ax = plt.gca()
             coords_all = []
             for coords in coords_out:
@@ -240,7 +252,7 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
             ticks = map(meridians, parallels)
 
 
-            ax.set_xticks(ticks[0] )
+            ax.set_xticks(ticks[0])
             ax.set_yticks(ticks[1])
             ax.set_xticklabels(meridians, rotation=45, fontsize=22)
             ax.set_yticklabels(parallels, fontsize=22)
@@ -290,7 +302,10 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
             except:
                 parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
                 meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
-            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd)
+            if topo is True:
+                map.arcgisimage(service='World_Shaded_Relief', xpixels = 800, verbose= False)
+
+            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd, alpha=0.8, norm=MidpointNormalize(mind, maxd, 0.))
             ax = plt.gca()
 
             coords_all = []
@@ -354,7 +369,7 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
 
             ticks = map(meridians, parallels)
 
-            ax.set_xticks(ticks[0] )
+            ax.set_xticks(ticks[0])
             ax.set_yticks(ticks[1])
             ax.set_xticklabels(meridians, rotation=45, fontsize=22)
             ax.set_yticklabels(parallels, fontsize=22)
@@ -426,7 +441,7 @@ def plot_on_map(db, scene, eastings, northings, x0, y0, x1, y1, mind, maxd,
             if topo is True:
                 map.arcgisimage(service='World_Shaded_Relief', xpixels = xpixels, verbose= False)
 
-            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd)
+            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd, alpha=0.8)
             ax = plt.gca()
 
             meridians = num.around(meridians, decimals=1, out=None)
@@ -1083,10 +1098,11 @@ def writeout(image, fname, sc=None):
         new_dataset.write(arr, 1)
         new_dataset.close()
 
-def combine(img_asc_path, img_dsc_path, name, plot=False):
+def combine(img_asc_path, img_dsc_path, name, weight_asc=1, weight_dsc=1, plot=False):
     print('Merging ascending and descending outputs with gdal')
+
     subprocess.run(["gdal_merge.py", "-o", "work-%s/comb.tif" %name, img_asc_path, img_dsc_path, "-seperate"])
-    subprocess.run(['gdal_calc.py', '--calc=A+B', "--outfile=work-%s/merged.tiff" % name, '-A', "work-%s/comb.tif" %name,
+    subprocess.run(['gdal_calc.py', '--calc=%s*A+%s*B' % (weight_asc, weight_dsc), "--outfile=work-%s/merged.tiff" % (name), '-A', "work-%s/comb.tif" %name,
     "--A_band=1", "-B", "work-%s/comb.tif" %name, "--B_band=2", '--overwrite'])
     fname = 'work-%s/merged.tiff' %name
     comb = rasterio.open('work-%s/merged.tiff' %name)
@@ -1122,9 +1138,8 @@ def to_latlon(fname):
     return longs, lats
 
 
-def bounding_box(image, area, sharp=False):
+def bounding_box(image, area, sharp=False, simple=False):
     thresh = threshold_otsu(image)
-
     bw = closing(image > thresh, square(1))
     if area is None:
         area = 900
@@ -1141,6 +1156,10 @@ def bounding_box(image, area, sharp=False):
     coords_box = []
     ellipses = []
     strikes = []
+    minrs = []
+    mincs = []
+    maxrs = []
+    maxcs = []
     for region in regionprops(label_image):
         if region.area >= area: #check if nec.
 
@@ -1156,6 +1175,10 @@ def bounding_box(image, area, sharp=False):
             ellipses.append([x0, y0, region.major_axis_length,
                             region.minor_axis_length, orientation])
             coords_box.append([minr, minc, maxr, maxc])
+            minrs.append(minr)
+            mincs.append(minc)
+            maxrs.append(maxr)
+            maxcs.append(maxc)
             x1 = x0 + math.cos(orientation) * 0.5 * region.major_axis_length
             y1 = y0 - math.sin(orientation) * 0.5 * region.major_axis_length
             x1a = x0 - math.cos(orientation) * 0.5 * region.major_axis_length
@@ -1185,7 +1208,72 @@ def bounding_box(image, area, sharp=False):
             ax.plot(x0, y0, '.g', markersize=15)
             coords_out.append(coords)
     ax.set_axis_off()
-    plt.close()
+    plt.show()
+    max_bound = [num.min(minrs), num.min(mincs),  num.max(maxrs), num.max(maxcs)]
+
+
+    thresh = threshold_otsu(image)
+    bw = closing(image > num.min(image), square(1))
+    if area is None:
+        area = 900
+
+    label_image = label(bw)
+    image_label_overlay = label2rgb(label_image, image=image)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.imshow(image_label_overlay)
+    newlist = sorted(regionprops(label_image), key=lambda region: region.area, reverse=True)
+
+    region = newlist[0]
+    if region.area >= area: #check if nec.
+
+        coords = []
+        minr, minc, maxr, maxc = region.bbox
+        rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
+                                  fill=False, edgecolor='red', linewidth=2)
+        ax.add_patch(rect)
+
+        y0, x0 = region.centroid
+        orientation = region.orientation
+        strikes.append(num.rad2deg(orientation)+90.)
+        ellipses.append([x0, y0, region.major_axis_length,
+                        region.minor_axis_length, orientation])
+        coords_box.append([minr, minc, maxr, maxc])
+        minrs.append(minr)
+        mincs.append(minc)
+        maxrs.append(maxr)
+        maxcs.append(maxc)
+        x1 = x0 + math.cos(orientation) * 0.5 * region.major_axis_length
+        y1 = y0 - math.sin(orientation) * 0.5 * region.major_axis_length
+        x1a = x0 - math.cos(orientation) * 0.5 * region.major_axis_length
+        y1a = y0 + math.sin(orientation) * 0.5 * region.major_axis_length
+        x2 = x0 - math.sin(orientation) * 0.05 * region.minor_axis_length
+        y2 = y0 - math.cos(orientation) * 0.05 * region.minor_axis_length
+        coords.append([x1,y1])
+        coords.append([x1a,y1a])
+        coords.append([x0,y0])
+        coords.append([x2,y2])
+        coords = num.array(coords)
+        poly = geometry.Polygon([[p[0], p[1]] for p in coords])
+        polys.append(poly)
+        hull = poly.convex_hull
+        try:
+            koor = hull.exterior.coords
+            pol = geometry.Polygon([[p[1], p[0]] for p in koor])
+            center = Centerline(pol)
+            centers.append(center)
+        except:
+            pass
+
+        ax.plot((x0, x1), (y0, y1), '-r', linewidth=12.5)
+        ax.plot((x0, x1a), (y0, y1a), '-r', linewidth=12.5)
+
+        ax.plot((x0, x2), (y0, y2), '-r', linewidth=12.5)
+        ax.plot(x0, y0, '.g', markersize=15)
+        coords_out.append(coords)
+    ax.set_axis_off()
+    plt.show()
+    max_bound = [num.min(minrs), num.min(mincs),  num.max(maxrs), num.max(maxcs)]
 
     return centers, coords_out, coords_box, strikes, ellipses
 
@@ -1317,6 +1405,40 @@ def dump_geojson(fault, eastings, northings, name, tiff=False):
 
     return database
 
+
+def aoi_snr(image, area):
+    where_are_NaNs = num.isnan(image)
+    image[where_are_NaNs] = 0
+    grad, mag, ori = get_gradient(image)
+    thresh = threshold_otsu(grad)
+    single_area = False
+    area = 600
+    i = 0
+    bw = closing(grad > thresh, square(1+i))
+    i = i +1
+    label_image = label(bw)
+    image_label_overlay = label2rgb(label_image, image=grad)
+
+    newlist = sorted(regionprops(label_image), key=lambda region: region.area, reverse=True)
+    count = 0
+    region_max = 0
+    for region in regionprops(label_image):
+        if region.area > region_max:
+            if region.area > area:
+                count = count +1
+                minr, minc, maxr, maxc = region.bbox
+
+    if count == 1:
+        single_area = True
+
+    signal = grad[minr:maxr, minc:maxc]
+    noise = grad.copy()
+    noise[minr:maxr, minc:maxc] = 0
+    snr = num.log(num.max(signal)/num.max(noise))
+    print(snr)
+    return abs(snr)
+
+
 def main():
     if len(sys.argv) < 2:
         print("input: asc_path dsc_path minlat minlon maxlat maxlon --workdir=name m")
@@ -1380,6 +1502,26 @@ def main():
         fname = 'work-%s/asc.mod.tif' % name
         writeout(img_asc, fname, sc=scene_asc)
         longs_asc, lats_asc = to_latlon(fname)
+
+        try:
+            global_cmt_catalog = catalog.GlobalCMT()
+
+            events = global_cmt_catalog.get_events(
+                time_range=(num.min(dates_asc), num.max(dates_asc)),
+                magmin=2.,
+                latmin=num.min(lats_asc),
+                latmax=num.max(lats_asc),
+                lonmin=num.min(longs_asc),
+                lonmax=num.max(longs_asc))
+
+            areas = []
+
+            for ev in events:
+                areas.append(num.cbrt(ev.moment_tensor.moment)/1000)
+            area = num.max(areas)
+        except:
+            area = 400
+
         fname = 'work-%s/asc-' % name
 
         img_asc = process(img_asc, coh_asc, longs_asc, lats_asc, scene_asc,
@@ -1393,6 +1535,7 @@ def main():
         img_asc, coh_asc, scene_asc, dates_asc = load(sys.argv[1],
                                                       kite_scene=True)
         dates.append(dates_asc)
+        snr_asc = aoi_snr(img_asc, area)
 
         img_dsc, coh_dsc, scene_dsc, dates_dsc = load(sys.argv[2],
                                                       kite_scene=True)
@@ -1411,6 +1554,7 @@ def main():
 
         db =1
         img_dsc, coh_dsc, scene_dsc, dates = load(sys.argv[2], kite_scene=True)
+        snr_dsc = aoi_snr(img_dsc, area)
 
 
         minda = num.min(scene_asc.displacement)
@@ -1429,8 +1573,42 @@ def main():
                         synthetic=synthetic, topo=topo, kite_scene=True)
 
 
-        comb_img = combine('work-%s/asc.mod.tif' % name, 'work-%s/dsc.mod.tif' %name, name, plot=False)
-        longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" %name)
+        fname = 'work-%s/asc.mod.tif' %name
+        comb = rasterio.open(fname)
+        longs_comb, lats_comb = to_latlon(fname)
+        comb_img = comb.read(1)
+
+        centers_bounding, coords_out, coords_box, strike, ellipses = bounding_box(comb_img,
+                                                                        400, sharp)
+        print("Strike(s) of moment weighted centerline(s) are :%s" % strike)
+
+        if plot is True:
+            fname = 'work-%s/asc-comb-' %name
+
+            plot_on_kite_box(coords_box, coords_out, scene_asc, longs_asc,
+                             lats_asc, longs_comb, lats_comb, x0,y0,x1,y1,
+                             name, ellipses, mind, maxd, fname,
+                             synthetic=synthetic, topo=topo)
+
+        fname = 'work-%s/dsc.mod.tif' %name
+        comb = rasterio.open(fname)
+        longs_comb, lats_comb = to_latlon(fname)
+        comb_img = comb.read(1)
+
+        centers_bounding, coords_out, coords_box, strike, ellipses = bounding_box(comb_img,
+                                                                        400, sharp)
+        print("Strike(s) of moment weighted centerline(s) are :%s" % strike)
+
+        if plot is True:
+            fname = 'work-%s/dsc-comb-' % name
+
+            plot_on_kite_box(coords_box, coords_out, scene_dsc, longs_dsc,
+                             lats_dsc, longs_comb, lats_comb, x0, y0, x1, y1,
+                             name, ellipses, mind, maxd, fname,
+                             synthetic=synthetic, topo=topo)
+
+        comb_img = combine('work-%s/asc.mod.tif' % name, 'work-%s/dsc.mod.tif' % name, name, weight_asc=snr_asc, weight_dsc= snr_dsc, plot=False)
+        longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" % name)
 
     else:
         fname = 'work-%s/merged.tiff' %name
@@ -1459,7 +1637,7 @@ def main():
         if plot is True:
             plt.figure(figsize=(sz1, sz2))
             plt.title('Loaded combined image')
-            xr= plt.imshow(comb_img)
+            xr = plt.imshow(comb_img)
             plt.close()
 
         if subsample is True:
