@@ -277,17 +277,20 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
             plt.close()
 
 
-
 def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
-                     eastcomb, northcomb, x0c, y0c, x1c, y1c, name, ellipses, mind, maxd,
-                     fname,
-                     synthetic=False, topo=False):
+                     eastcomb, northcomb, x0c, y0c, x1c, y1c, name, ellipses,
+                     mind, maxd, fname, synthetic=False, topo=False):
             scd = scene
-            data_dsc= scd.displacement
+            data_dsc = scd.displacement
+            lengths = []
+            widths = []
 
             data_dsc[data_dsc==0] = num.nan
 
-            map = Basemap(projection='merc', llcrnrlon=num.min(eastings),llcrnrlat=num.min(northings),urcrnrlon=num.max(eastings),urcrnrlat=num.max(northings),
+            map = Basemap(projection='merc', llcrnrlon=num.min(eastings),
+                          llcrnrlat=num.min(northings),
+                          urcrnrlon=num.max(eastings),
+                          urcrnrlat=num.max(northings),
                           resolution='h', epsg=3395)
             ratio_lat = num.max(northings)/num.min(northings)
             ratio_lon = num.max(eastings)/num.min(eastings)
@@ -303,9 +306,10 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
                 parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
                 meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
             if topo is True:
-                map.arcgisimage(service='World_Shaded_Relief', xpixels = 800, verbose= False)
+                map.arcgisimage(service='World_Shaded_Relief', xpixels=800, verbose=False)
 
-            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd, alpha=0.8, norm=MidpointNormalize(mind, maxd, 0.))
+            map.imshow(data_dsc, cmap="seismic", vmin=mind, vmax=maxd,
+                       alpha=0.8, norm=MidpointNormalize(mind, maxd, 0.))
             ax = plt.gca()
 
             coords_all = []
@@ -329,9 +333,20 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
 
                 ax.plot((x0, x2), (y0, y2), '-r', linewidth=2.5)
                 ax.plot(x0, y0, '.g', markersize=15)
-                height = orthodrome.distance_accurate50m(coords[0][0], coords[0][1], coords[3][0], coords[3][1])
-                width = orthodrome.distance_accurate50m(coords[2][0], coords[2][1], coords[3][0], coords[3][1])
-                e = mpatches.Ellipse((x0,y0), width=width*2., height=height*2., angle=num.rad2deg(ell[4])+90, lw=2, edgecolor='purple', fill=False)
+                height = orthodrome.distance_accurate50m(coords[0][0],
+                                                         coords[0][1],
+                                                         coords[3][0],
+                                                         coords[3][1])
+                width = orthodrome.distance_accurate50m(coords[2][0],
+                                                        coords[2][1],
+                                                        coords[3][0],
+                                                        coords[3][1])
+                lengths.append(height)
+                widths.append(width)
+                e = mpatches.Ellipse((x0, y0), width=width*2.,
+                                     height=height*2.,
+                                     angle=num.rad2deg(ell[4])+90, lw=2,
+                                     edgecolor='purple', fill=False)
                 ax.add_patch(e)
 
             coords_boxes = []
@@ -340,10 +355,12 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
 
                 kx = k[2]
                 ky = k[1]
-                coords_boxes.append([eastcomb[int(kx)][int(ky)], northcomb[int(kx)][int(ky)]])
+                coords_boxes.append([eastcomb[int(kx)][int(ky)],
+                                     northcomb[int(kx)][int(ky)]])
                 kx = k[0]
                 ky = k[3]
-                coords_boxes.append([eastcomb[int(kx)][int(ky)], northcomb[int(kx)][int(ky)]])
+                coords_boxes.append([eastcomb[int(kx)][int(ky)],
+                                     northcomb[int(kx)][int(ky)]])
 
             n = 0
 
@@ -352,17 +369,20 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
                 maxc, maxr = map(coords_boxes[1+n][0], coords_boxes[1+n][1])
 
                 n = n+2
-                rect = mpatches.Rectangle((minc, minr),  maxc - minc, maxr - minr,
-                                                      fill=False, edgecolor='r', linewidth=2)
-
+                rect = mpatches.Rectangle((minc, minr),  maxc - minc,
+                                          maxr - minr,
+                                          fill=False, edgecolor='r',
+                                          linewidth=2)
                 ax.add_patch(rect)
 
             try:
-                parallels = num.linspace(y0c ,y1c,22)
-                meridians = num.linspace(x0c, x1c,22)
+                parallels = num.linspace(y0c, y1c, 22)
+                meridians = num.linspace(x0c, x1c, 22)
             except:
-                parallels = num.linspace((num.min(northings)),(num.max(northings)),22)
-                meridians = num.linspace((num.min(eastings)),(num.max(eastings)),22)
+                parallels = num.linspace((num.min(northings)),
+                                         (num.max(northings)), 22)
+                meridians = num.linspace((num.min(eastings)),
+                                         (num.max(eastings)), 22)
 
             meridians = num.around(meridians, decimals=1, out=None)
             parallels = num.around(parallels, decimals=1, out=None)
@@ -404,6 +424,8 @@ def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
             fig.set_size_inches((11, 11), forward=False)
             plt.savefig(fname+'box.svg', format='svg', dpi=300)
             plt.close()
+
+            return widths, lengths
 
 
 def plot_on_map(db, scene, eastings, northings, x0, y0, x1, y1, mind, maxd,
@@ -861,7 +883,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
             ls_clear[ls_clear==0] = num.nan
         #    ls_clear[ls_clear<num.max(ls_clear)*0.001] = num.nan
 
-            map.imshow(ls_clear, cmap="jet")
+            map.imshow(ls_clear, cmap="bone_r")
 
             ax = plt.gca()
 
@@ -1208,12 +1230,12 @@ def bounding_box(image, area, sharp=False, simple=False):
             ax.plot(x0, y0, '.g', markersize=15)
             coords_out.append(coords)
     ax.set_axis_off()
-    plt.show()
+    plt.close()
     max_bound = [num.min(minrs), num.min(mincs),  num.max(maxrs), num.max(maxcs)]
 
 
     thresh = threshold_otsu(image)
-    bw = closing(image > num.min(image), square(1))
+    bw = closing(image > num.max(image)*0.1, square(80))
     if area is None:
         area = 900
 
@@ -1272,10 +1294,10 @@ def bounding_box(image, area, sharp=False, simple=False):
         ax.plot(x0, y0, '.g', markersize=15)
         coords_out.append(coords)
     ax.set_axis_off()
-    plt.show()
+    plt.close()
     max_bound = [num.min(minrs), num.min(mincs),  num.max(maxrs), num.max(maxcs)]
 
-    return centers, coords_out, coords_box, strikes, ellipses
+    return centers, coords_out, coords_box, strikes, ellipses, max_bound
 
 
 def skelotonize(image, plot=True):
@@ -1435,7 +1457,6 @@ def aoi_snr(image, area):
     noise = grad.copy()
     noise[minr:maxr, minc:maxc] = 0
     snr = num.log(num.max(signal)/num.max(noise))
-    print(snr)
     return abs(snr)
 
 
@@ -1487,6 +1508,11 @@ def main():
             subsample = True
         if argv == "--grond_export":
             dump_grid = True
+
+    strikes = []
+    lengths = []
+    widths = []
+
     if loading is False:
 
         img_asc, coh_asc, scene_asc, dates_asc = load(sys.argv[1],
@@ -1565,21 +1591,23 @@ def main():
         maxd = num.max([maxa, maxd])
 
         if plot is True:
-            fname = 'work-%s/asc' %name
-            plot_on_map(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1,mind, maxd, fname,
+            fname = 'work-%s/asc' % name
+            plot_on_map(db, scene_asc, longs_asc, lats_asc, x0, y0 ,x1, y1, mind, maxd, fname,
                         synthetic=synthetic, topo=topo, kite_scene=True)
-            fname = 'work-%s/dsc' %name
+            fname = 'work-%s/dsc' % name
             plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0, y0, x1, y1, mind, maxd, fname,
                         synthetic=synthetic, topo=topo, kite_scene=True)
 
 
-        fname = 'work-%s/asc.mod.tif' %name
+        fname = 'work-%s/asc.mod.tif' % name
         comb = rasterio.open(fname)
         longs_comb, lats_comb = to_latlon(fname)
         comb_img = comb.read(1)
 
-        centers_bounding, coords_out, coords_box, strike, ellipses = bounding_box(comb_img,
+        centers_bounding, coords_out, coords_box, strike, ellipses, max_bound = bounding_box(comb_img,
                                                                         400, sharp)
+        for st in strike:
+            strikes.append(st)
         print("Strike(s) of moment weighted centerline(s) are :%s" % strike)
 
         if plot is True:
@@ -1595,8 +1623,11 @@ def main():
         longs_comb, lats_comb = to_latlon(fname)
         comb_img = comb.read(1)
 
-        centers_bounding, coords_out, coords_box, strike, ellipses = bounding_box(comb_img,
+        centers_bounding, coords_out, coords_box, strike, ellipses, max_bound = bounding_box(comb_img,
                                                                         400, sharp)
+
+        for st in strike:
+            strikes.append(st)
         print("Strike(s) of moment weighted centerline(s) are :%s" % strike)
 
         if plot is True:
@@ -1727,48 +1758,64 @@ def main():
             fobj_cum.write('%.2f %.2f %.20f\n' % (x, y, sembcums))
         fobj_cum.close()
 
-
-        fobj_cum = open(os.path.join('work-%s/grad_grid_resam.ASC' %s),'w')
+        fobj_cum = open(os.path.join('work-%s/grad_grid_resam.ASC' % name), 'w')
         for x, y, sembcums in zip(es_resamp, ns_resamp, comb_img_grid_resamp):
             fobj_cum.write('%.2f %.2f %.20f\n' % (x, y, sembcums))
         fobj_cum.close()
 
-    if plot is True:
-        fname = 'work-%s/comb-' %name
 
-        plot_on_map(db, comb_img.copy(), longs_comb, lats_comb, x0, y0, x1, y1, mindc, maxdc, fname,
+    if plot is True:
+        fname = 'work-%s/comb-' % name
+
+        plot_on_map(db, comb_img.copy(), longs_comb, lats_comb, x0, y0, x1, y1,
+                    mindc, maxdc, fname,
                     synthetic=synthetic, topo=topo, comb=True)
 
-    centers_bounding, coords_out, coords_box, strike, ellipses = bounding_box(comb_img,
+    centers_bounding, coords_out, coords_box, strike, ellipses, max_bound = bounding_box(comb_img,
                                                                     area, sharp)
+    for st in strike:
+        strikes.append(st)
     print("Strike(s) of moment weighted centerline(s) are :%s" % strike)
 
     if plot is True:
-        fname = 'work-%s/comb-' %name
+        fname = 'work-%s/comb-' % name
 
-        plot_on_kite_box(coords_box, coords_out, scene_asc, longs_asc,
-                         lats_asc, longs_comb, lats_comb, x0,y0,x1,y1,
-                         name, ellipses, mind, maxd, fname,
-                         synthetic=synthetic, topo=topo)
+        lengths, widths = plot_on_kite_box(coords_box, coords_out, scene_asc,
+                                           longs_asc, lats_asc, longs_comb,
+                                           lats_comb, x0, y0, x1, y1,
+                                           name, ellipses, mind, maxd, fname,
+                                           synthetic=synthetic, topo=topo)
+
+        fobj_cum = open(os.path.join('work-%s/priors.ASC' % name), 'w')
+        for lens, wid in zip(lengths, widths):
+            fobj_cum.write('%.2f %.2f\n' % (lens, wid))
+        fobj_cum.close()
+
+        fobj_cum = open(os.path.join('work-%s/priors_strike.ASC' % name), 'w')
+        for st in zip(strikes):
+            fobj_cum.write('%.2f\n' % (st))
+        fobj_cum.close()
 
         plot_on_kite_line(coords_out, scene_asc, longs_asc, lats_asc,
-                          longs_comb, lats_comb, x0, y0, x1, y1, mind, maxd, fname,
-                          synthetic=synthetic, topo=topo)
+                          longs_comb, lats_comb, x0, y0, x1, y1, mind, maxd,
+                          fname, synthetic=synthetic, topo=topo)
 
     simp_fault, comp_fault = simplify(centers_bounding)
 
     db = dump_geojson(simp_fault, longs_comb, lats_comb, name) #check
     if plot is True:
-        plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0,y0,x1,y1, mind, maxd, fname,
+        plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0, y0, x1,
+                             y1, mind, maxd, fname,
                              synthetic=synthetic, topo=topo,)
 
     img_dsc, coh_dsc, scene_dsc, dates = load(sys.argv[2], kite_scene=True)
     fname = 'work-%s/dsc.mod.tif' % name
     longs_dsc, lats_dsc = to_latlon(fname)
 
-    fname = 'work-%s/comb-' %name
+    fname = 'work-%s/comb-' % name
     if plot is True:
-        plot_on_kite_scatter(db, scene_dsc, longs_dsc, lats_dsc, x0,y0,x1,y1, mind, maxd, fname,
+        plot_on_kite_scatter(db, scene_dsc, longs_dsc, lats_dsc, x0, y0, x1,
+                             y1, mind, maxd, fname,
                              synthetic=synthetic, topo=topo,)
 
     centers = skelotonize(comb_img)
