@@ -46,6 +46,7 @@ from matplotlib import rc
 from pyrocko.client import catalog
 import matplotlib as mpl
 
+
 class MidpointNormalize(mpl.colors.Normalize):
     """Normalise the colorbar."""
     def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
@@ -163,7 +164,7 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind, m
 
             ticks = map(meridians, parallels)
 
-            ax.set_xticks(ticks[0] )
+            ax.set_xticks(ticks[0])
             ax.set_yticks(ticks[1])
             ax.set_xticklabels(meridians, rotation=45, fontsize=22)
             ax.set_yticklabels(parallels, fontsize=22)
