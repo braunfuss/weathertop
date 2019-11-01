@@ -1096,7 +1096,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
             plt.colorbar(cax=cax)
             fig = plt.gcf()
             fig.set_size_inches((11, 11), forward=False)
-            plt.savefig(fname+'comb.svg', format='svg', dpi=300)
+            plt.savefig(fname+'dir-comb.svg', format='svg', dpi=300)
             plt.close()
 
     image = image / num.sqrt(num.sum(image**2))
@@ -1183,6 +1183,7 @@ def bounding_box(image, area, sharp=False, simple=False):
     mincs = []
     maxrs = []
     maxcs = []
+    max_bound = []
     for region in regionprops(label_image):
         if region.area >= area: #check if nec.
 
@@ -1232,71 +1233,73 @@ def bounding_box(image, area, sharp=False, simple=False):
             coords_out.append(coords)
     ax.set_axis_off()
     plt.close()
-    max_bound = [num.min(minrs), num.min(mincs),  num.max(maxrs), num.max(maxcs)]
+    try:
+        max_bound = [num.min(minrs), num.min(mincs),  num.max(maxrs), num.max(maxcs)]
 
 
-    thresh = threshold_otsu(image)
-    bw = closing(image > num.max(image)*0.1, square(80))
-    if area is None:
-        area = 900
+        thresh = threshold_otsu(image)
+        bw = closing(image > num.max(image)*0.1, square(80))
+        if area is None:
+            area = 900
 
-    label_image = label(bw)
-    image_label_overlay = label2rgb(label_image, image=image)
+        label_image = label(bw)
+        image_label_overlay = label2rgb(label_image, image=image)
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.imshow(image_label_overlay)
-    newlist = sorted(regionprops(label_image), key=lambda region: region.area, reverse=True)
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.imshow(image_label_overlay)
+        newlist = sorted(regionprops(label_image), key=lambda region: region.area, reverse=True)
 
-    region = newlist[0]
-    if region.area >= area: #check if nec.
+        region = newlist[0]
+        if region.area >= area: #check if nec.
 
-        coords = []
-        minr, minc, maxr, maxc = region.bbox
-        rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
-                                  fill=False, edgecolor='red', linewidth=2)
-        ax.add_patch(rect)
+            coords = []
+            minr, minc, maxr, maxc = region.bbox
+            rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
+                                      fill=False, edgecolor='red', linewidth=2)
+            ax.add_patch(rect)
 
-        y0, x0 = region.centroid
-        orientation = region.orientation
-        strikes.append(num.rad2deg(orientation)+90.)
-        ellipses.append([x0, y0, region.major_axis_length,
-                        region.minor_axis_length, orientation])
-        coords_box.append([minr, minc, maxr, maxc])
-        minrs.append(minr)
-        mincs.append(minc)
-        maxrs.append(maxr)
-        maxcs.append(maxc)
-        x1 = x0 + math.cos(orientation) * 0.5 * region.major_axis_length
-        y1 = y0 - math.sin(orientation) * 0.5 * region.major_axis_length
-        x1a = x0 - math.cos(orientation) * 0.5 * region.major_axis_length
-        y1a = y0 + math.sin(orientation) * 0.5 * region.major_axis_length
-        x2 = x0 - math.sin(orientation) * 0.05 * region.minor_axis_length
-        y2 = y0 - math.cos(orientation) * 0.05 * region.minor_axis_length
-        coords.append([x1,y1])
-        coords.append([x1a,y1a])
-        coords.append([x0,y0])
-        coords.append([x2,y2])
-        coords = num.array(coords)
-        poly = geometry.Polygon([[p[0], p[1]] for p in coords])
-        polys.append(poly)
-        hull = poly.convex_hull
-        try:
-            koor = hull.exterior.coords
-            pol = geometry.Polygon([[p[1], p[0]] for p in koor])
-            center = Centerline(pol)
-            centers.append(center)
-        except:
-            pass
+            y0, x0 = region.centroid
+            orientation = region.orientation
+            strikes.append(num.rad2deg(orientation)+90.)
+            ellipses.append([x0, y0, region.major_axis_length,
+                            region.minor_axis_length, orientation])
+            coords_box.append([minr, minc, maxr, maxc])
+            minrs.append(minr)
+            mincs.append(minc)
+            maxrs.append(maxr)
+            maxcs.append(maxc)
+            x1 = x0 + math.cos(orientation) * 0.5 * region.major_axis_length
+            y1 = y0 - math.sin(orientation) * 0.5 * region.major_axis_length
+            x1a = x0 - math.cos(orientation) * 0.5 * region.major_axis_length
+            y1a = y0 + math.sin(orientation) * 0.5 * region.major_axis_length
+            x2 = x0 - math.sin(orientation) * 0.05 * region.minor_axis_length
+            y2 = y0 - math.cos(orientation) * 0.05 * region.minor_axis_length
+            coords.append([x1,y1])
+            coords.append([x1a,y1a])
+            coords.append([x0,y0])
+            coords.append([x2,y2])
+            coords = num.array(coords)
+            poly = geometry.Polygon([[p[0], p[1]] for p in coords])
+            polys.append(poly)
+            hull = poly.convex_hull
+            try:
+                koor = hull.exterior.coords
+                pol = geometry.Polygon([[p[1], p[0]] for p in koor])
+                center = Centerline(pol)
+                centers.append(center)
+            except:
+                pass
 
-        ax.plot((x0, x1), (y0, y1), '-r', linewidth=12.5)
-        ax.plot((x0, x1a), (y0, y1a), '-r', linewidth=12.5)
+            ax.plot((x0, x1), (y0, y1), '-r', linewidth=12.5)
+            ax.plot((x0, x1a), (y0, y1a), '-r', linewidth=12.5)
 
-        ax.plot((x0, x2), (y0, y2), '-r', linewidth=12.5)
-        ax.plot(x0, y0, '.g', markersize=15)
-        coords_out.append(coords)
-    ax.set_axis_off()
-    plt.close()
-    max_bound = [num.min(minrs), num.min(mincs),  num.max(maxrs), num.max(maxcs)]
+            ax.plot((x0, x2), (y0, y2), '-r', linewidth=12.5)
+            ax.plot(x0, y0, '.g', markersize=15)
+            coords_out.append(coords)
+        ax.set_axis_off()
+        plt.close()
+    except:
+        pass
 
     return centers, coords_out, coords_box, strikes, ellipses, max_bound
 
@@ -1638,6 +1641,7 @@ def main():
                              lats_dsc, longs_comb, lats_comb, x0, y0, x1, y1,
                              name, ellipses, mind, maxd, fname,
                              synthetic=synthetic, topo=topo)
+
 
         comb_img = combine('work-%s/asc.mod.tif' % name, 'work-%s/dsc.mod.tif' % name, name, weight_asc=snr_asc, weight_dsc= snr_dsc, plot=False)
         longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" % name)
