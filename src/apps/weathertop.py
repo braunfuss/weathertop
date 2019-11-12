@@ -49,7 +49,7 @@ import matplotlib as mpl
 
 class MidpointNormalize(mpl.colors.Normalize):
     """Normalise the colorbar."""
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+    def __init__(self, vmin=None, vmax=None, midpoint=0, clip=False):
         self.midpoint = midpoint
         mpl.colors.Normalize.__init__(self, vmin, vmax, clip)
 
@@ -1586,20 +1586,26 @@ def main():
         img_dsc, coh_dsc, scene_dsc, dates = load(sys.argv[2], kite_scene=True)
         snr_dsc = aoi_snr(img_dsc, area)
 
-
         minda = num.min(scene_asc.displacement)
         mindd = num.min(scene_dsc.displacement)
         mind = num.min([minda, mindd])
         maxa = num.max(scene_asc.displacement)
-        maxd = num.max(scene_dsc.displacement)
-        maxd = num.max([maxa, maxd])
+        maxdd = num.max(scene_dsc.displacement)
+        maxd = num.max([maxa, maxdd])
+        max_cum = num.max([abs(maxd), abs(mind)])
+        minda = -max_cum
+        mindd = -max_cum
+        mind = -max_cum
+        maxa = max_cum
+        maxdd = max_cum
+        maxd = max_cum
 
         if plot is True:
             fname = 'work-%s/asc' % name
-            plot_on_map(db, scene_asc, longs_asc, lats_asc, x0, y0 ,x1, y1, mind, maxd, fname,
+            plot_on_map(db, scene_asc, longs_asc, lats_asc, x0, y0 ,x1, y1, minda, maxa, fname,
                         synthetic=synthetic, topo=topo, kite_scene=True)
             fname = 'work-%s/dsc' % name
-            plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0, y0, x1, y1, mind, maxd, fname,
+            plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0, y0, x1, y1, mindd, maxdd, fname,
                         synthetic=synthetic, topo=topo, kite_scene=True)
 
 
@@ -1619,7 +1625,7 @@ def main():
 
             plot_on_kite_box(coords_box, coords_out, scene_asc, longs_asc,
                              lats_asc, longs_comb, lats_comb, x0,y0,x1,y1,
-                             name, ellipses, mind, maxd, fname,
+                             name, ellipses, minda, maxa, fname,
                              synthetic=synthetic, topo=topo)
 
         fname = 'work-%s/dsc.mod.tif' %name
@@ -1639,7 +1645,7 @@ def main():
 
             plot_on_kite_box(coords_box, coords_out, scene_dsc, longs_dsc,
                              lats_dsc, longs_comb, lats_comb, x0, y0, x1, y1,
-                             name, ellipses, mind, maxd, fname,
+                             name, ellipses, mindd, maxdd, fname,
                              synthetic=synthetic, topo=topo)
 
 
@@ -1667,8 +1673,8 @@ def main():
         mindd = num.min(scene_dsc.displacement)
         mind = num.min([minda, mindd])
         maxa = num.max(scene_asc.displacement)
-        maxd = num.max(scene_dsc.displacement)
-        maxd = num.max([maxa, maxd])
+        maxdd = num.max(scene_dsc.displacement)
+        maxd = num.max([maxa, maxdd])
 
         if plot is True:
             plt.figure(figsize=(sz1, sz2))
