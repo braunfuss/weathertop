@@ -1099,7 +1099,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
             plt.savefig(fname+'dir-comb.svg', format='svg', dpi=300)
             plt.close()
 
-    image = image / num.sqrt(num.sum(image**2))
+    #image = image / num.sqrt(num.sum(image**2))
 
     return image
 
@@ -1130,6 +1130,7 @@ def combine(img_asc_path, img_dsc_path, name, weight_asc=1, weight_dsc=1, plot=F
     fname = 'work-%s/merged.tiff' %name
     comb = rasterio.open('work-%s/merged.tiff' %name)
     img = comb.read(1)
+    img = img / num.sqrt(num.sum(img**2))
     return img
 
 def to_latlon(fname):
