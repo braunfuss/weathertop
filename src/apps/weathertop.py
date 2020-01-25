@@ -184,8 +184,10 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind, m
                 pass
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
-
-            plt.colorbar(cax=cax)
+            try:
+                plt.colorbar(cax=cax)
+            except TypeError:
+                pass
             fig = plt.gcf()
             fig.set_size_inches((11, 11), forward=False)
             plt.savefig(fname+'scatter.svg', format='svg', dpi=300)
