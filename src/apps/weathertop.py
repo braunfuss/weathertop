@@ -363,6 +363,35 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind, m
                 x, y = coords_re_x, coords_re_y
                 plt.scatter(x, y, c=next(colors))
 
+            meridians = num.around(meridians, decimals=1, out=None)
+            parallels = num.around(parallels, decimals=1, out=None)
+
+            ticks = map(meridians, parallels)
+
+            ax.set_xticks(ticks[0])
+            ax.set_yticks(ticks[1])
+            ax.set_xticklabels(meridians, rotation=45, fontsize=22)
+            ax.set_yticklabels(parallels, fontsize=22)
+            ax.tick_params(direction='out', length=6, width=4)
+            plt.grid()
+
+            #map.drawparallels(parallels,labels=[1,0,0,0],fontsize=22)
+            #map.drawmeridians(meridians,labels=[1,1,0,1],fontsize=22, rotation=45)
+            addArrow(ax, scene)
+            try:
+
+                x0, y0 = map(x0, y0)
+                x1, y1 = map(x1, y1)
+                ax.set_xlim([x0, x1])
+                ax.set_ylim([y0, y1])
+            except:
+                pass
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            try:
+                plt.colorbar(cax=cax)
+            except TypeError:
+                pass
             fig = plt.gcf()
             fig.set_size_inches((11, 11), forward=False)
             plt.savefig(fname+'scatter.svg', format='svg', dpi=300)
@@ -1126,7 +1155,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True, coh_
             plt.savefig(fname+'dir-comb.svg', format='svg', dpi=300)
             plt.close()
 
-    image = image / num.sqrt(num.sum(image**2))
+    #image = image / num.sqrt(num.sum(image**2))
 
     return image
 
@@ -1157,6 +1186,7 @@ def combine(img_asc_path, img_dsc_path, name, weight_asc=1, weight_dsc=1, plot=F
     fname = 'work-%s/merged.tiff' %name
     comb = rasterio.open('work-%s/merged.tiff' %name)
     img = comb.read(1)
+    img = img / num.sqrt(num.sum(img**2))
     return img
 
 def to_latlon(fname):
