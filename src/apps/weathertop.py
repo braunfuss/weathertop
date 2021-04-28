@@ -51,6 +51,56 @@ import matplotlib as mpl
 from cartopy.io import srtm
 from cartopy.io import PostprocessedRasterSource, LocatedImage
 from cartopy.io.srtm import SRTM3Source, SRTM1Source
+import logging
+import os
+import re
+import requests
+
+op = os.path
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('kite.clients')
+
+
+def _download_file(url, outfile):
+    logger.debug('Downloading %s to %s', url, outfile)
+    r = requests.get(url)
+
+    with open(outfile, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=8192):
+            if chunk:
+                f.write(chunk)
+    return outfile
+
+
+def download_licsar(unw_url, destination='.'):
+    if not unw_url.endswith('.unw.tif'):
+        raise ValueError('%s does not end with .unw.tif!' % unw_url)
+
+    scene_name = op.basename(unw_url)
+    url_dir = op.dirname(unw_url)
+    product_name = op.basename(unw_url)
+
+    os.makedirs(destination, exist_ok=True)
+
+    logger.info('Downloading surface displacement data from LiCSAR: %s',
+                product_name)
+    unw_file = op.join(destination, scene_name)
+    _download_file(unw_url, unw_file)
+
+    logger.info('Downloading LOS angles...')
+    scene_id = url_dir.split('/')[-3]
+    meta_url = op.normpath(op.join(url_dir, '../../metadata'))
+
+    for unit in ('E', 'N', 'U'):
+        fn = '%s.geo.%s.tif' % (scene_id, unit)
+        los_url = op.join(meta_url, fn)
+        los_url = re.sub(r'^(https:/)\b', r'\1/', los_url, 0)
+        outfn = op.normpath(op.join(destination, fn))
+
+        _download_file(los_url, outfn)
+
+    logger.info('Download complete! Open with\n\n\tspool --load=%s',
+                unw_file)
 
 
 def shade(located_elevations):
@@ -375,8 +425,6 @@ def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind, m
             ax.tick_params(direction='out', length=6, width=4)
             plt.grid()
 
-            #map.drawparallels(parallels,labels=[1,0,0,0],fontsize=22)
-            #map.drawmeridians(meridians,labels=[1,1,0,1],fontsize=22, rotation=45)
             addArrow(ax, scene)
             try:
 
@@ -1296,6 +1344,7 @@ def bounding_box(image, area, sharp=False, simple=False):
 
         thresh = threshold_otsu(image)
         bw = closing(image > num.max(image)*0.1, square(80))
+
         if area is None:
             area = 900
 
@@ -1498,6 +1547,7 @@ def aoi_snr(image, area):
     area = 600
     i = 0
     bw = closing(grad > thresh, square(1+i))
+    bw2 = closing(grad> num.max(grad)*0.05 , square(1+i))
     i = i +1
     label_image = label(bw)
     image_label_overlay = label2rgb(label_image, image=grad)
