@@ -126,21 +126,23 @@ class MidpointNormalize(mpl.colors.Normalize):
 
 
 rc('axes', linewidth=2)
-font = {'family' : 'normal',
-        'weight' : 'bold',
-        'size'   : 22}
+font = {'family': 'normal',
+        'weight': 'bold',
+        'size': 22}
 
 rc('font', **font)
+
 
 def _load_all(stream, Loader=GutsSafeLoader):
     return list(yaml.load_all(stream=stream, Loader=Loader))
 
+
 plt.switch_backend('Qt4Agg')
 
-#Definitions
-sz1=20
-sz2=20
-selem = rectangle(100,100)
+# Definitions
+sz1 = 20
+sz2 = 20
+selem = rectangle(100, 100)
 d2r = num.pi / 180.
 
 
@@ -361,83 +363,94 @@ def addArrow(ax, scene):
     ax.add_artist(los_arrow)
 
 
-def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind, maxd,
-                         fname,
+def plot_on_kite_scatter(db, scene, eastings, northings, x0, y0, x1, y1, mind,
+                         maxd, fname,
                          synthetic=False, topo=False):
-            scd = scene
-            data_dsc= scd.displacement
+    '''
+    Plotting function for plotting scatter points from a database (db)
+    with coordinates eastings and northings on data from a kite scene withhin
+    frame given by x0, y0, x1 and y1 and saves
+    the image to a folder under name fname. Optional draw of topography.
+    '''
+    scd = scene
+    data_dsc = scd.displacement
 
-            data_dsc[data_dsc==0] = num.nan
+    data_dsc[data_dsc == 0] = num.nan
 
-            extent = [num.min(eastings), num.max(eastings), num.min(northings), num.max(northings)]
-            central_lon = num.mean(extent[:2])
-            central_lat = num.mean(extent[2:])
-            f, ax = plt.subplots(1, 1, subplot_kw=dict(projection=ccrs.PlateCarree()))
-            ax.set_extent(extent)
-            if topo is True:
-                    # shade function when the data is retrieved.
-                    shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
-                    # Add the shaded SRTM source to our map with a grayscale colormap.
-                    ax.add_raster(shaded_srtm, cmap='Greys')
-                    ax.add_feature(cartopy.feature.OCEAN)
-                    ax.add_feature(cartopy.feature.LAND, edgecolor='black')
-                    ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
-                    ax.add_feature(cartopy.feature.RIVERS)
+    extent = [num.min(eastings), num.max(eastings), num.min(northings),
+              num.max(northings)]
+    central_lon = num.mean(extent[:2])
+    central_lat = num.mean(extent[2:])
+    f, ax = plt.subplots(1, 1, subplot_kw=dict(projection=ccrs.PlateCarree()))
+    ax.set_extent(extent)
+    if topo is True:
+        # shade function when the data is retrieved.
+        shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
+        # Add the shaded SRTM source to our map with a grayscale colormap.
+        ax.add_raster(shaded_srtm, cmap='Greys')
+        ax.add_feature(cartopy.feature.OCEAN)
+        ax.add_feature(cartopy.feature.LAND, edgecolor='black')
+        ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
+        ax.add_feature(cartopy.feature.RIVERS)
 
-            h = ax.imshow(num.rot90(data_dsc.T), origin='upper', extent=extent,
-                      transform=ccrs.PlateCarree(), cmap="seismic", alpha=0.8,
-                      norm=MidpointNormalize(mind, maxd, 0.))
+    h = ax.imshow(num.rot90(data_dsc.T), origin='upper', extent=extent,
+                  transform=ccrs.PlateCarree(), cmap="seismic", alpha=0.8,
+                  norm=MidpointNormalize(mind, maxd, 0.))
 
-            gl = ax.gridlines(draw_labels=True)
-            gl.ylabels_right = False
-            gl.xlabels_top = False
-            addArrow(ax, scene)
-            divider = make_axes_locatable(ax)
-            #cax = divider.append_axes("right", size="5%", pad=0.05)
-            cax = divider.new_horizontal(size="5%", pad=0.1, axes_class=plt.Axes)
-            f.add_axes(cax)
-            plt.colorbar(h, cax=cax)
+    gl = ax.gridlines(draw_labels=True)
+    gl.ylabels_right = False
+    gl.xlabels_top = False
+    addArrow(ax, scene)
+    divider = make_axes_locatable(ax)
+    cax = divider.new_horizontal(size="5%", pad=0.1, axes_class=plt.Axes)
+    f.add_axes(cax)
+    plt.colorbar(h, cax=cax)
 
-            gj = db
-            faults = gj['features']
-            coords = [feat['geometry']['coordinates'] for feat in faults]
+    gj = db
+    faults = gj['features']
+    coords = [feat['geometry']['coordinates'] for feat in faults]
 
-            i = len(coords)
-            colors = iter(cm.rainbow(num.linspace(0, 1, i)))
-            for j in coords:
-                coords_re_x = []
-                coords_re_y = []
-                for k in j:
-                    coords_re_x.append(k[0])
-                    coords_re_y.append(k[1])
-                x, y = coords_re_x, coords_re_y
-                plt.scatter(x, y, c=next(colors))
+    i = len(coords)
+    colors = iter(cm.rainbow(num.linspace(0, 1, i)))
+    for j in coords:
+        coords_re_x = []
+        coords_re_y = []
+        for k in j:
+            coords_re_x.append(k[0])
+            coords_re_y.append(k[1])
+        x, y = coords_re_x, coords_re_y
+        plt.scatter(x, y, c=next(colors))
 
-            plt.grid()
+    plt.grid()
 
-            addArrow(ax, scene)
-            try:
-
-                x0, y0 = map(x0, y0)
-                x1, y1 = map(x1, y1)
-                ax.set_xlim([x0, x1])
-                ax.set_ylim([y0, y1])
-            except:
-                pass
-            divider = make_axes_locatable(ax)
-            try:
-                plt.colorbar(cax=cax)
-            except TypeError:
-                pass
-            fig = plt.gcf()
-            fig.set_size_inches((11, 11), forward=False)
-            plt.savefig(fname+'scatter.svg', format='svg', dpi=300)
-            plt.close()
+    addArrow(ax, scene)
+    try:
+        x0, y0 = map(x0, y0)
+        x1, y1 = map(x1, y1)
+        ax.set_xlim([x0, x1])
+        ax.set_ylim([y0, y1])
+    except:
+        pass
+    divider = make_axes_locatable(ax)
+    try:
+        plt.colorbar(cax=cax)
+    except TypeError:
+        pass
+    fig = plt.gcf()
+    fig.set_size_inches((11, 11), forward=False)
+    plt.savefig(fname+'scatter.svg', format='svg', dpi=300)
+    plt.close()
 
 
 def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
                       northcomb, x0c, y0c, x1c, y1c, mind, maxd, fname,
                       synthetic=False, topo=False):
+    '''
+    Plotting function for plotting a line from coordinates coords_out,
+    with coordinates eastings and northings on data from a kite scene withhin
+    frame given by x0c, y0c, x1c and y1c and saves
+    the image to a folder under name fname. Optional draw of topography.
+    '''
     scd = scene
     data_dsc = scd.displacement
 
@@ -511,12 +524,18 @@ def plot_on_kite_line(coords_out, scene, eastings, northings, eastcomb,
 def plot_on_kite_box(coords_out, coords_line, scene, eastings, northings,
                      eastcomb, northcomb, x0c, y0c, x1c, y1c, name, ellipses,
                      mind, maxd, fname, synthetic=False, topo=False):
+    '''
+    Plotting function for plotting a rectangle from coords_out and coords_line
+    with coordinates eastings and northings on data from a kite scene withhin
+    frame given by x0, y0, x1 and y1 and saves
+    the image to a folder under name fname. Optional draw of topography.
+    '''
     scd = scene
     data_dsc = scd.displacement
     lengths = []
     widths = []
 
-    data_dsc[data_dsc==0] = num.nan
+    data_dsc[data_dsc == 0] = num.nan
     extent = [num.min(eastings), num.max(eastings), num.min(northings),
               num.max(northings)]
     central_lon = num.mean(extent[:2])
@@ -647,58 +666,61 @@ def plot_on_map(db, scene, eastings, northings, x0, y0, x1, y1, mind, maxd,
                 fname,
                 synthetic=False, topo=False, kite_scene=False, comb=False):
 
-            if kite_scene is True:
-                scd = scene
-                data_dsc= scd.displacement
-            else:
-                data_dsc= num.rot90(scene.T)
+    if kite_scene is True:
+        scd = scene
+        data_dsc = scd.displacement
+    else:
+        data_dsc = num.rot90(scene.T)
 
-            if comb is True:
-                data_dsc[data_dsc< num.max(data_dsc)*0.1] = num.nan
+    if comb is True:
+        data_dsc[data_dsc < num.max(data_dsc)*0.1] = num.nan
 
-            else:
-                data_dsc[data_dsc==0] = num.nan
+    else:
+        data_dsc[data_dsc == 0] = num.nan
 
-            extent = [num.min(eastings), num.max(eastings), num.min(northings), num.max(northings)]
-            central_lon = num.mean(extent[:2])
-            central_lat = num.mean(extent[2:])
-            f, ax = plt.subplots(1, 1, subplot_kw=dict(projection=ccrs.PlateCarree()))
-            ax.set_extent(extent)
+    extent = [num.min(eastings), num.max(eastings), num.min(northings),
+              num.max(northings)]
+    central_lon = num.mean(extent[:2])
+    central_lat = num.mean(extent[2:])
+    f, ax = plt.subplots(1, 1, subplot_kw=dict(projection=ccrs.PlateCarree()))
+    ax.set_extent(extent)
 
-            if topo is True:
-                    # shade function when the data is retrieved.
-                    shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
-                    # Add the shaded SRTM source to our map with a grayscale colormap.
-                    ax.add_raster(shaded_srtm, cmap='Greys')
-                    ax.add_feature(cartopy.feature.OCEAN)
-                    ax.add_feature(cartopy.feature.LAND, edgecolor='black')
-                    ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
-                    ax.add_feature(cartopy.feature.RIVERS)
-            scale_bar(ax, (0.1, 0.1), 5_0)
+    if topo is True:
+        # shade function when the data is retrieved.
+        shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
+        # Add the shaded SRTM source to our map with a grayscale colormap.
+        ax.add_raster(shaded_srtm, cmap='Greys')
+        ax.add_feature(cartopy.feature.OCEAN)
+        ax.add_feature(cartopy.feature.LAND, edgecolor='black')
+        ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
+        ax.add_feature(cartopy.feature.RIVERS)
+    scale_bar(ax, (0.1, 0.1), 5_0)
 
-            h = ax.imshow(num.rot90(data_dsc.T), origin='upper', extent=extent,
-                          transform=ccrs.PlateCarree(), cmap="seismic", vmin=mind,
-                          vmax=maxd, alpha=0.8 )
+    h = ax.imshow(num.rot90(data_dsc.T), origin='upper', extent=extent,
+                  transform=ccrs.PlateCarree(), cmap="seismic", vmin=mind,
+                  vmax=maxd, alpha=0.8)
 
-            if kite_scene is True:
-                addArrow(ax, scene)
+    if kite_scene is True:
+        addArrow(ax, scene)
 
-            gl = ax.gridlines(draw_labels=True)
-            gl.ylabels_right = False
-            gl.xlabels_top = False
-            divider = make_axes_locatable(ax)
-            cax = divider.new_horizontal(size="5%", pad=0.1, axes_class=plt.Axes)
-            f.add_axes(cax)
-            plt.colorbar(h, cax=cax)
+    gl = ax.gridlines(draw_labels=True)
+    gl.ylabels_right = False
+    gl.xlabels_top = False
+    divider = make_axes_locatable(ax)
+    cax = divider.new_horizontal(size="5%", pad=0.1, axes_class=plt.Axes)
+    f.add_axes(cax)
+    plt.colorbar(h, cax=cax)
 
-            fig = plt.gcf()
-            fig.set_size_inches((11, 11), forward=False)
-            plt.savefig(fname+'.svg', format='svg', dpi=300)
-            plt.close()
+    fig = plt.gcf()
+    fig.set_size_inches((11, 11), forward=False)
+    plt.savefig(fname+'.svg', format='svg', dpi=300)
+    plt.close()
 
 
 def load(path, kite_scene=True, grid=False, path_cc=None):
-
+    '''
+    Load data from a path or optional from a kite scene.
+    '''
     if kite_scene is True:
         sc = Scene.load(path)
         img = sc.displacement
@@ -801,11 +823,32 @@ def get_binned_ori(phase, selem, bin=None):
 
 
 def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
-            coh_sharp=False, loading=False, topo=False, synthetic=False,
+            mode=False, loading=False, topo=False, synthetic=False,
             calc_statistics=False, subsample=False):
+
+    '''
+    Main processing chain.
+
+    Input are:
+    :img:  displacement map : numpy array
+    :longs; lats: coordinates assoicated to img data , numpy array
+    :coh: coherence of data or quality factor of data, same shape as img
+    :scene: kite scene
+    :x0,y0,x1,y1 : coordinates to apply processing within
+    :fname : name of output file
+
+    Optional:
+    :topo : enable plot topography from ARCGIS server
+    :mode : Choice of mode, can be true (heigh weight to coherence),
+           false (standard), basic () or ss (strike-slip mode)
+    :synthetic: bool
+    :calc_statistics: bool
+    :subsample: bool
+    '''
+
     selem = rectangle(100, 100)
     plt_img = img.copy()
-    if coh_sharp is False:
+    if mode is False:
         ls = img.copy()
         ls[num.where(ls < 0)] = 1
         ls[num.where(ls != 1)] = 0
@@ -857,7 +900,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         coh[coh < num.mean(coh)] = 0
         coh_filt = filters.gaussian_filter(coh, 5, order=0)
 
-    elif coh_sharp == 'basic':
+    elif mode == 'basic':
         ls = img.copy()
         ls[num.where(ls < 0)] = 1
         ls[num.where(ls != 1)] = 0
@@ -901,7 +944,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         grad_mask, mag_mask, ori_mask = get_gradient(ls)
         image = coh_filt*grad
 
-    elif coh_sharp is True:
+    elif mode is True:
         ls = img.copy()
         ls[num.where(ls < 0)] = 1
         ls[num.where(ls != 1)] = 0
@@ -925,7 +968,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         grad2, mag2, or2 = get_gradient(grad)
         grad2 = grad2/num.max(grad2)
 
-        grad_mask[grad_mask !=0] = 1
+        grad_mask[grad_mask != 0] = 1
 
         pointy = grad*grad_mask
         thres = num.max(pointy)*0.1
@@ -942,7 +985,7 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         coh_filt = filters.gaussian_filter(coh, 5, order=0)
         image = image*coh_filt
 
-    elif coh_sharp == "ss":
+    elif mode == "ss":
         ls = img.copy()
         ls[num.where(ls < 0)] = 1
         ls[num.where(ls != 1)] = 0
@@ -989,10 +1032,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         coh[coh < num.mean(coh)]=0
         coh_filt = filters.gaussian_filter(coh, 30, order=0)
         grad = filters.gaussian_filter(grad, 30, order=0)
-#        image = image / num.sqrt(num.sum(image**2))
-#        coh_filt = image / num.sqrt(num.sum(coh_filt**2))
-#        grad = image / num.sqrt(num.sum(grad**2))
-
         image = image*coh_filt
 
     if plot is True:
@@ -1006,21 +1045,22 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         ax = plt.axes(projection=ccrs.PlateCarree())
         ax.set_extent(extent)
 
-
         if topo is True:
-                # shade function when the data is retrieved.
-                shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
-                # Add the shaded SRTM source to our map with a grayscale colormap.
-                ax.add_raster(shaded_srtm, cmap='Greys')
-                ax.add_feature(cartopy.feature.OCEAN)
-                ax.add_feature(cartopy.feature.LAND, edgecolor='black')
-                ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
-                ax.add_feature(cartopy.feature.RIVERS)
-        ls_dark[ls_dark==0] = num.nan
-        ls_clear[ls_clear==0] = num.nan
+            # shade function when the data is retrieved.
+            shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
+            # Add the shaded SRTM source to our map with a grayscale colormap.
+            ax.add_raster(shaded_srtm, cmap='Greys')
+            ax.add_feature(cartopy.feature.OCEAN)
+            ax.add_feature(cartopy.feature.LAND, edgecolor='black')
+            ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
+            ax.add_feature(cartopy.feature.RIVERS)
+        ls_dark[ls_dark == 0] = num.nan
+        ls_clear[ls_clear == 0] = num.nan
         scale_bar(ax, (0.1, 0.1), 5_0)
-        ax.imshow(num.rot90(ls_dark.T), origin='upper', extent=extent, transform=ccrs.PlateCarree(), cmap='jet')
-        ax.imshow(num.rot90(ls_clear.T), origin='upper', extent=extent, transform=ccrs.PlateCarree())
+        ax.imshow(num.rot90(ls_dark.T), origin='upper', extent=extent,
+                  transform=ccrs.PlateCarree(), cmap='jet')
+        ax.imshow(num.rot90(ls_clear.T), origin='upper', extent=extent,
+                  transform=ccrs.PlateCarree())
 
         ax.gridlines(draw_labels=True)
 
@@ -1030,38 +1070,38 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         plt.savefig(fname+'mask.svg', format='svg', dpi=300)
         plt.close()
 
-        extent = [num.min(eastings), num.max(eastings), num.min(northings), num.max(northings)]
+        extent = [num.min(eastings), num.max(eastings), num.min(northings),
+                  num.max(northings)]
         central_lon = num.mean(extent[:2])
         central_lat = num.mean(extent[2:])
 
-        f, ax = plt.subplots(1, 1, subplot_kw=dict(projection=ccrs.PlateCarree()))
+        f, ax = plt.subplots(1, 1,
+                             subplot_kw=dict(projection=ccrs.PlateCarree()))
         ax.set_extent(extent)
 
         if topo is True:
-                # shade function when the data is retrieved.
-                shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
-                # Add the shaded SRTM source to our map with a grayscale colormap.
-                ax.add_raster(shaded_srtm, cmap='Greys')
-                ax.add_feature(cartopy.feature.OCEAN)
-                ax.add_feature(cartopy.feature.LAND, edgecolor='black')
-                ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
-                ax.add_feature(cartopy.feature.RIVERS)
-        ls_dark[ls_dark==0] = num.nan
-        ls_clear[ls_clear==0] = num.nan
+            # shade function when the data is retrieved.
+            shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
+            # Add the shaded SRTM source to our map with a grayscale colormap.
+            ax.add_raster(shaded_srtm, cmap='Greys')
+            ax.add_feature(cartopy.feature.OCEAN)
+            ax.add_feature(cartopy.feature.LAND, edgecolor='black')
+            ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
+            ax.add_feature(cartopy.feature.RIVERS)
+        ls_dark[ls_dark == 0] = num.nan
+        ls_clear[ls_clear == 0] = num.nan
         scale_bar(ax, (0.1, 0.1), 5_0)
         ls_clear = grad.copy()
-        ls_clear[ls_clear==0] = num.nan
-    #    ls_clear[ls_clear<num.max(ls_clear)*0.001] = num.nan
+        ls_clear[ls_clear == 0] = num.nan
 
         h = ax.imshow(num.rot90(ls_clear.T), origin='upper', extent=extent,
-                  transform=ccrs.PlateCarree(), cmap="bone_r")
+                      transform=ccrs.PlateCarree(), cmap="bone_r")
 
         gl = ax.gridlines(draw_labels=True)
         gl.ylabels_right = False
         gl.xlabels_top = False
         addArrow(ax, scene)
         divider = make_axes_locatable(ax)
-        #cax = divider.append_axes("right", size="5%", pad=0.05)
         cax = divider.new_horizontal(size="5%", pad=0.1, axes_class=plt.Axes)
         f.add_axes(cax)
         plt.colorbar(h, cax=cax)
@@ -1082,27 +1122,21 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         ax.set_extent(extent)
 
         if topo is True:
-                # shade function when the data is retrieved.
-                shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
-                # Add the shaded SRTM source to our map with a grayscale colormap.
-                ax.add_raster(shaded_srtm, cmap='Greys')
-                ax.add_feature(cartopy.feature.OCEAN)
-                ax.add_feature(cartopy.feature.LAND, edgecolor='black')
-                ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
-                ax.add_feature(cartopy.feature.RIVERS)
-        #ls_dark = ls_dark*-1.
+            # shade function when the data is retrieved.
+            shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
+            # Add the shaded SRTM source to our map with a grayscale colormap.
+            ax.add_raster(shaded_srtm, cmap='Greys')
+            ax.add_feature(cartopy.feature.OCEAN)
+            ax.add_feature(cartopy.feature.LAND, edgecolor='black')
+            ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
+            ax.add_feature(cartopy.feature.RIVERS)
         ls_clear = grad_mask.copy()
         ls_clear[ls_clear<num.max(ls_clear)*0.0000001] = num.nan
-
-        #grad2, mag2, or2 = get_gradient(grad_mask)
-        #grad2[grad2<num.max(grad2)*0.1] = num.nan
-
 
         ax.imshow(num.rot90(ls_clear.T), origin='upper', extent=extent,
                   transform=ccrs.PlateCarree(), cmap="hot")
         h = ax.imshow(num.rot90(plt_img.T), origin='upper', extent=extent,
-                  transform=ccrs.PlateCarree(), cmap="seismic", alpha=0.4)
-
+                      transform=ccrs.PlateCarree(), cmap="seismic", alpha=0.4)
 
         scale_bar(ax, (0.1, 0.1), 5_0)
         ax.gridlines(draw_labels=True)
@@ -1118,25 +1152,24 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         extent = [num.min(eastings), num.max(eastings), num.min(northings), num.max(northings)]
         central_lon = num.mean(extent[:2])
         central_lat = num.mean(extent[2:])
-        f, ax = plt.subplots(1, 1, subplot_kw=dict(projection=ccrs.PlateCarree()))
+        f, ax = plt.subplots(1, 1,
+                             subplot_kw=dict(projection=ccrs.PlateCarree()))
         ax.set_extent(extent)
 
-
         if topo is True:
-                # shade function when the data is retrieved.
-                shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
-                # Add the shaded SRTM source to our map with a grayscale colormap.
-                ax.add_raster(shaded_srtm, cmap='Greys')
-                ax.add_feature(cartopy.feature.OCEAN)
-                ax.add_feature(cartopy.feature.LAND, edgecolor='black')
-                ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
-                ax.add_feature(cartopy.feature.RIVERS)
-        #ls_dark = ls_dark*-1.
+            # shade function when the data is retrieved.
+            shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
+            # Add the shaded SRTM source to our map with a grayscale colormap.
+            ax.add_raster(shaded_srtm, cmap='Greys')
+            ax.add_feature(cartopy.feature.OCEAN)
+            ax.add_feature(cartopy.feature.LAND, edgecolor='black')
+            ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
+            ax.add_feature(cartopy.feature.RIVERS)
+
         ls_clear = coh_filt.copy()
-        #ls_clear[ls_clear<num.max(ls_clear)*0.01] = num.nan
 
         h = ax.imshow(num.rot90(ls_clear.T), origin='upper', extent=extent,
-                  transform=ccrs.PlateCarree(), cmap='seismic')
+                      transform=ccrs.PlateCarree(), cmap='seismic')
 
         scale_bar(ax, (0.1, 0.1), 5_0)
         gl = ax.gridlines(draw_labels=True)
@@ -1144,7 +1177,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         gl.xlabels_top = False
         addArrow(ax, scene)
         divider = make_axes_locatable(ax)
-        #cax = divider.append_axes("right", size="5%", pad=0.05)
         cax = divider.new_horizontal(size="5%", pad=0.1, axes_class=plt.Axes)
         f.add_axes(cax)
         plt.colorbar(h, cax=cax)
@@ -1157,22 +1189,23 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         eastings = longs
         northings = lats
         fig = plt.figure()
-        extent = [num.min(eastings), num.max(eastings), num.min(northings), num.max(northings)]
+        extent = [num.min(eastings), num.max(eastings), num.min(northings),
+                  num.max(northings)]
         central_lon = num.mean(extent[:2])
         central_lat = num.mean(extent[2:])
-        f, ax = plt.subplots(1, 1, subplot_kw=dict(projection=ccrs.PlateCarree()))
+        f, ax = plt.subplots(1, 1,
+                             subplot_kw=dict(projection=ccrs.PlateCarree()))
         ax.set_extent(extent)
 
-
         if topo is True:
-                # shade function when the data is retrieved.
-                shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
-                # Add the shaded SRTM source to our map with a grayscale colormap.
-                ax.add_raster(shaded_srtm, cmap='Greys')
-                ax.add_feature(cartopy.feature.OCEAN)
-                ax.add_feature(cartopy.feature.LAND, edgecolor='black')
-                ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
-                ax.add_feature(cartopy.feature.RIVERS)
+            # shade function when the data is retrieved.
+            shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
+            # Add the shaded SRTM source to our map with a grayscale colormap.
+            ax.add_raster(shaded_srtm, cmap='Greys')
+            ax.add_feature(cartopy.feature.OCEAN)
+            ax.add_feature(cartopy.feature.LAND, edgecolor='black')
+            ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
+            ax.add_feature(cartopy.feature.RIVERS)
         ls_clear = image.copy()
         ls_clear = ls_clear / num.sqrt(num.sum(ls_clear**2))
         ls_clear[ls_clear < num.max(ls_clear)*0.01] = num.nan
@@ -1185,7 +1218,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         gl.xlabels_top = False
         addArrow(ax, scene)
         divider = make_axes_locatable(ax)
-        #cax = divider.append_axes("right", size="5%", pad=0.05)
         cax = divider.new_horizontal(size="5%", pad=0.1, axes_class=plt.Axes)
         f.add_axes(cax)
         plt.colorbar(h, cax=cax)
@@ -1194,8 +1226,6 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         fig.set_size_inches((11, 11), forward=False)
         plt.savefig(fname+'dir-comb.svg', format='svg', dpi=300)
         plt.close()
-
-    #image = image / num.sqrt(num.sum(image**2))
 
     return image
 
@@ -1207,9 +1237,10 @@ def writeout(image, fname, sc=None):
 
     if sc is not None:
         ulNutm = sc.frame.llNutm+sc.frame.dNmeter*sc.rows
-        transform = from_origin(sc.frame.llEutm,ulNutm, sc.frame.dEmeter, sc.frame.dNmeter)
+        transform = from_origin(sc.frame.llEutm, ulNutm, sc.frame.dEmeter,
+                                sc.frame.dNmeter)
         new_dataset = rasterio.open(fname, 'w', driver='GTiff',
-                                    height = sc.rows, width = sc.cols,
+                                    height=sc.rows, width=sc.cols,
                                     count=1, dtype=str(arr.dtype),
                                     crs='+proj=utm +zone=%s +units=m +no_defs' %(sc.frame.utm_zone),
                                     transform=transform)
@@ -1217,17 +1248,20 @@ def writeout(image, fname, sc=None):
         new_dataset.write(arr, 1)
         new_dataset.close()
 
-def combine(img_asc_path, img_dsc_path, name, weight_asc=1, weight_dsc=1, plot=False):
+
+def combine(img_asc_path, img_dsc_path, name, weight_asc=1,
+            weight_dsc=1, plot=False):
     print('Merging ascending and descending outputs with gdal')
 
-    subprocess.run(["gdal_merge.py", "-o", "work-%s/comb.tif" %name, img_asc_path, img_dsc_path, "-seperate"])
-    subprocess.run(['gdal_calc.py', '--calc=%s*A+%s*B' % (weight_asc, weight_dsc), "--outfile=work-%s/merged.tiff" % (name), '-A', "work-%s/comb.tif" %name,
-    "--A_band=1", "-B", "work-%s/comb.tif" %name, "--B_band=2", '--overwrite'])
-    fname = 'work-%s/merged.tiff' %name
-    comb = rasterio.open('work-%s/merged.tiff' %name)
+    subprocess.run(["gdal_merge.py", "-o", "work-%s/comb.tif" % name, img_asc_path, img_dsc_path, "-seperate"])
+    subprocess.run(['gdal_calc.py', '--calc=%s*A+%s*B' % (weight_asc, weight_dsc), "--outfile=work-%s/merged.tiff" % (name), '-A', "work-%s/comb.tif" % name,
+    "--A_band=1", "-B", "work-%s/comb.tif" % name, "--B_band=2", '--overwrite'])
+    fname = 'work-%s/merged.tiff' % name
+    comb = rasterio.open('work-%s/merged.tiff' %n ame)
     img = comb.read(1)
     img = img / num.sqrt(num.sum(img**2))
     return img
+
 
 def to_latlon(fname):
     import rasterio
@@ -1269,7 +1303,8 @@ def bounding_box(image, area, sharp=False, simple=False):
 
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.imshow(image_label_overlay)
-    newlist = sorted(regionprops(label_image), key=lambda region: region.area, reverse=True)
+    newlist = sorted(regionprops(label_image), key=lambda region: region.area,
+                     reverse=True)
     polys = []
     centers = []
     coords_out = []
@@ -1282,7 +1317,7 @@ def bounding_box(image, area, sharp=False, simple=False):
     maxcs = []
     max_bound = []
     for region in regionprops(label_image):
-        if region.area >= area: #check if nec.
+        if region.area >= area:  # check if selected area is large enough
 
             coords = []
             minr, minc, maxr, maxc = region.bbox
@@ -1306,10 +1341,10 @@ def bounding_box(image, area, sharp=False, simple=False):
             y1a = y0 + math.sin(orientation) * 0.5 * region.major_axis_length
             x2 = x0 - math.sin(orientation) * 0.05 * region.minor_axis_length
             y2 = y0 - math.cos(orientation) * 0.05 * region.minor_axis_length
-            coords.append([x1,y1])
-            coords.append([x1a,y1a])
-            coords.append([x0,y0])
-            coords.append([x2,y2])
+            coords.append([x1, y1])
+            coords.append([x1a, y1a])
+            coords.append([x0, y0])
+            coords.append([x2, y2])
             coords = num.array(coords)
             poly = geometry.Polygon([[p[0], p[1]] for p in coords])
             polys.append(poly)
@@ -1345,10 +1380,11 @@ def bounding_box(image, area, sharp=False, simple=False):
 
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.imshow(image_label_overlay)
-        newlist = sorted(regionprops(label_image), key=lambda region: region.area, reverse=True)
+        newlist = sorted(regionprops(label_image), key=lambda region: region.area,
+                         reverse=True)
 
         region = newlist[0]
-        if region.area >= area: #check if nec.
+        if region.area >= area:  # check if nec.
 
             coords = []
             minr, minc, maxr, maxc = region.bbox
@@ -1372,10 +1408,10 @@ def bounding_box(image, area, sharp=False, simple=False):
             y1a = y0 + math.sin(orientation) * 0.5 * region.major_axis_length
             x2 = x0 - math.sin(orientation) * 0.05 * region.minor_axis_length
             y2 = y0 - math.cos(orientation) * 0.05 * region.minor_axis_length
-            coords.append([x1,y1])
-            coords.append([x1a,y1a])
-            coords.append([x0,y0])
-            coords.append([x2,y2])
+            coords.append([x1, y1])
+            coords.append([x1a, y1a])
+            coords.append([x0, y0])
+            coords.append([x2, y2])
             coords = num.array(coords)
             poly = geometry.Polygon([[p[0], p[1]] for p in coords])
             polys.append(poly)
@@ -1414,7 +1450,7 @@ def skelotonize(image, plot=True):
     polys = []
     centers = []
     for region in regionprops(label_image):
-        if region.area >= 400: #check if nec.
+        if region.area >= 400:  # check if nec.
             coords = num.array(region.coords)
             poly = geometry.Polygon([[p[0], p[1]] for p in coords])
             polys.append(poly)
@@ -1423,13 +1459,13 @@ def skelotonize(image, plot=True):
             koor = hull.exterior.coords
             pol = geometry.Polygon([[p[0], p[1]] for p in koor])
             pol = pol.buffer(-1)
-            pol = pol.simplify(4000, preserve_topology=True) #check
+            pol = pol.simplify(4000, preserve_topology=True)  # check
             try:
                 center = Centerline(pol)
                 centers.append(center)
             except:
                 pass
-        if region.area >= 400: #check; should be scaled to pixel size?
+        if region.area >= 400:  # check; should be scaled to pixel size?
             minr, minc, maxr, maxc = region.bbox
             rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
                                       fill=False, edgecolor='red', linewidth=2)
@@ -1467,29 +1503,30 @@ def l1tf_prep(res_faults, plot=True):
 def simplify(centers, plot=True):
     fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(sz1, sz2))
     simp_fault = []
-    comp_fault=[]
+    comp_fault = []
     for center in centers:
-        coords=[]
+        coords =[]
         for line in center:
-            coord= line.coords
+            coord = line.coords
             coords.append(coord)
-        coords= num.array(coords)
-        hand = num.array([(coords[i][m]) for i in range(num.shape(coords)[0]) for m in range(num.shape(coords[i])[0])])
-        new_hand = hand.copy()
+        coords = num.array(coords)
+        geom_object = num.array([(coords[i][m]) for i in range(num.shape(coords)[0]) for m in range(num.shape(coords[i])[0])])
+        new_geom_object = geom_object.copy()
         for _ in range(1):
-            new_hand = subdivide_polygon(new_hand, degree=2, preserve_ends=True)
-            new_hand  = approximate_polygon(new_hand , tolerance=0.8)
-        comp_fault.append(new_hand)
+            new_geom_object = subdivide_polygon(new_geom_object, degree=2,
+                                                preserve_ends=True)
+            new_geom_object = approximate_polygon(new_geom_object,
+                                                  tolerance=0.8)
+        comp_fault.append(new_geom_object)
 
-        appr_hand = hand.copy()
+        appr_geom_object = geom_object.copy()
         # approximate subdivided polygon with Douglas-Peucker algorithm
-        appr_hand = approximate_polygon(appr_hand, tolerance=10)
+        appr_geom_object = approximate_polygon(appr_geom_object, tolerance=10)
 
-        ax1.scatter(appr_hand[:, 1], appr_hand[:, 0])
-        simp_fault.append(appr_hand[:, :])
+        ax1.scatter(appr_geom_object[:, 1], appr_geom_object[:, 0])
+        simp_fault.append(appr_geom_object[:, :])
 
-
-        ax2.scatter(new_hand[:, 1], new_hand[:, 0])
+        ax2.scatter(new_geom_object[:, 1], new_geom_object[:, 0])
     ax1.set_title('Simple line')
     ax2.set_title('More complexity')
     plt.close()
@@ -1499,19 +1536,21 @@ def simplify(centers, plot=True):
 def df_to_geojson(df, eastings, northings, properties=None):
     coords_fault = []
     n = 0
-    geojson = {'type':'FeatureCollection', 'features':[]}
+    geojson = {'type': 'FeatureCollection', 'features': []}
     for p in df:
-        feature = {'type':'Feature',
-                   'properties':{'ogc_fid':n,
-                                 'ns_average_dip': 60,
-                                 'ns_average_rake':120},
-                   'geometry':{'type':'LineString',
-                               'coordinates':[]}}
+        feature = {'type': 'Feature',
+                   'properties': {'ogc_fid': n,
+                                  'ns_average_dip': 60,
+                                  'ns_average_rake': 120},
+                   'geometry': {'type': 'LineString',
+                                'coordinates': []}}
         for k in p:
-            kx= num.asarray(k[0])
-            ky= num.asarray(k[1])
-            feature['geometry']['coordinates'] = [(eastings[int(kx)][int(ky)], northings[int(kx)][int(ky)])]
-            coords_fault.append((eastings[int(kx)][int(ky)], northings[int(kx)][int(ky)]))
+            kx = num.asarray(k[0])
+            ky = num.asarray(k[1])
+            feature['geometry']['coordinates'] = [(eastings[int(kx)][int(ky)],
+                                                   northings[int(kx)][int(ky)])]
+            coords_fault.append((eastings[int(kx)][int(ky)],
+                                 northings[int(kx)][int(ky)]))
         n =+ 1
 
         feature['geometry']['coordinates'] = coords_fault
@@ -1525,7 +1564,7 @@ def dump_geojson(fault, eastings, northings, name, tiff=False):
     east = num.min(eastings)
     north = num.min(northings)
     database = df_to_geojson(fault, eastings, northings)
-    with open('work-%s/fault_lines' %name, 'w') as f:
+    with open('work-%s/fault_lines' % name, 'w') as f:
         json.dump(database, f)
 
     return database
@@ -1540,12 +1579,13 @@ def aoi_snr(image, area):
     area = 600
     i = 0
     bw = closing(grad > thresh, square(1+i))
-    bw2 = closing(grad> num.max(grad)*0.05 , square(1+i))
+    bw2 = closing(grad > num.max(grad)*0.05, square(1+i))
     i = i +1
     label_image = label(bw)
     image_label_overlay = label2rgb(label_image, image=grad)
 
-    newlist = sorted(regionprops(label_image), key=lambda region: region.area, reverse=True)
+    newlist = sorted(regionprops(label_image), key=lambda region: region.area,
+                     reverse=True)
     count = 0
     region_max = 0
     for region in regionprops(label_image):
@@ -1607,7 +1647,7 @@ def main():
         if argv == "--synthetic":
             synthetic = True
         if argv == "--statistics":
-            calc_statistics=True
+            calc_statistics = True
         if argv == "--subsample":
             subsample = True
         if argv == "--grond_export":
@@ -1655,7 +1695,7 @@ def main():
         fname = 'work-%s/asc-' % name
 
         img_asc = process(img_asc, coh_asc, longs_asc, lats_asc, scene_asc,
-                          x0, y0, x1, y1, fname, plot=plot, coh_sharp=sharp,
+                          x0, y0, x1, y1, fname, plot=plot, mode=sharp,
                           loading=loading, topo=topo, synthetic=synthetic,
                           calc_statistics=calc_statistics, subsample=subsample)
         fname = 'work-%s/asc.mod.tif' % name
@@ -1671,15 +1711,15 @@ def main():
                                                       kite_scene=True)
         dates.append(dates_dsc)
 
-        fname = 'work-%s/dsc.mod.tif' %name
+        fname = 'work-%s/dsc.mod.tif' % name
         writeout(img_dsc, fname, sc=scene_dsc)
         longs_dsc, lats_dsc = to_latlon(fname)
-        fname = 'work-%s/dsc-' %name
+        fname = 'work-%s/dsc-' % name
         img_dsc = process(img_dsc, coh_dsc, longs_dsc, lats_dsc, scene_dsc,
-                          x0, y0, x1, y1, fname, plot=plot, coh_sharp=sharp,
+                          x0, y0, x1, y1, fname, plot=plot, mode=sharp,
                           loading=loading, topo=topo, synthetic=synthetic,
                           calc_statistics=calc_statistics, subsample=subsample)
-        fname = 'work-%s/dsc.mod.tif' %name
+        fname = 'work-%s/dsc.mod.tif' % name
         writeout(img_dsc, fname, sc=scene_dsc)
 
         db =1
@@ -1702,33 +1742,33 @@ def main():
 
         if plot is True:
             fname = 'work-%s/asc' % name
-            plot_on_map(db, scene_asc, longs_asc, lats_asc, x0, y0 ,x1, y1, minda, maxa, fname,
+            plot_on_map(db, scene_asc, longs_asc, lats_asc, x0, y0, x1, y1,
+                        minda, maxa, fname,
                         synthetic=synthetic, topo=topo, kite_scene=True)
             fname = 'work-%s/dsc' % name
-            plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0, y0, x1, y1, mindd, maxdd, fname,
+            plot_on_map(db, scene_dsc, longs_dsc, lats_dsc, x0, y0, x1, y1,
+                        mindd, maxdd, fname,
                         synthetic=synthetic, topo=topo, kite_scene=True)
-
 
         fname = 'work-%s/asc.mod.tif' % name
         comb = rasterio.open(fname)
         longs_comb, lats_comb = to_latlon(fname)
         comb_img = comb.read(1)
 
-        centers_bounding, coords_out, coords_box, strike, ellipses, max_bound = bounding_box(comb_img,
-                                                                        400, sharp)
+        centers_bounding, coords_out, coords_box, strike, ellipses, max_bound=bounding_box(comb_img, 400, sharp)
         for st in strike:
             strikes.append(st)
         print("Strike(s) of moment weighted centerline(s) are :%s" % strike)
 
         if plot is True:
-            fname = 'work-%s/asc-comb-' %name
+            fname = 'work-%s/asc-comb-' % name
 
             plot_on_kite_box(coords_box, coords_out, scene_asc, longs_asc,
-                             lats_asc, longs_comb, lats_comb, x0,y0,x1,y1,
+                             lats_asc, longs_comb, lats_comb, x0, y0, x1, y1,
                              name, ellipses, minda, maxa, fname,
                              synthetic=synthetic, topo=topo)
 
-        fname = 'work-%s/dsc.mod.tif' %name
+        fname = 'work-%s/dsc.mod.tif' % name
         comb = rasterio.open(fname)
         longs_comb, lats_comb = to_latlon(fname)
         comb_img = comb.read(1)
@@ -1749,11 +1789,11 @@ def main():
                              synthetic=synthetic, topo=topo)
 
 
-        comb_img = combine('work-%s/asc.mod.tif' % name, 'work-%s/dsc.mod.tif' % name, name, weight_asc=snr_asc, weight_dsc= snr_dsc, plot=False)
+        comb_img = combine('work-%s/asc.mod.tif' % name, 'work-%s/dsc.mod.tif' % name, name, weight_asc=snr_asc, weight_dsc=snr_dsc, plot=False)
         longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" % name)
 
     else:
-        fname = 'work-%s/merged.tiff' %name
+        fname = 'work-%s/merged.tiff' % name
         comb = rasterio.open(fname)
         longs, lats = to_latlon(fname)
         comb_img = comb.read(1)
@@ -1767,7 +1807,6 @@ def main():
                                                       kite_scene=True)
         img_dsc, coh_dsc, scene_dsc, dates_dsc = load(sys.argv[2],
                                                       kite_scene=True)
-
 
         minda = num.min(scene_asc.displacement)
         mindd = num.min(scene_dsc.displacement)
@@ -1814,23 +1853,20 @@ def main():
             qt.tile_size_min = 250    # Minimum leave edge length in [m] or [deg]
 
             # We save the scene in kite's format
-            #sc.save('kite_scene')
+            # sc.save('kite_scene')
 
             # Or export the quadtree to CSV file
-            #qt.export('/tmp/tree.csv')
-
-
+            # qt.export('/tmp/tree.csv')
 
     # statistical output
-    #img_asc, coh_asc, scene_asc = load('muji_kite/asc', kite_scene=True)
-    #comb_img = process(img_asc, coh_asc, plot=True)
+    # img_asc, coh_asc, scene_asc = load('muji_kite/asc', kite_scene=True)
+    # comb_img = process(img_asc, coh_asc, plot=True)
     # use quadtree subsampling on gradient
 
     img_asc, coh_asc, scene_asc, dates = load(sys.argv[1], kite_scene=True)
     fname = 'work-%s/asc.mod.tif' %name
-    #writeout(img_asc, fname, sc=scene_asc)
     longs_asc, lats_asc = to_latlon(fname)
-    db =1
+    db = 1
     longs_comb, lats_comb = to_latlon("work-%s/merged.tiff" % name)
     mindc = num.min(comb_img)
     maxdc = num.max(comb_img)
@@ -1864,12 +1900,14 @@ def main():
 
         comb_img_grid = comb_img.flatten()
         comb_img_grid_resamp = signal.decimate(comb_img_grid, 20)
-        fobj_cum = open(os.path.join('work-%s/grad_grid.ASC' % name),'w')
+        fobj_cum = open(os.path.join('work-%s/grad_grid.ASC' % name),
+                        'w')
         for x, y, sembcums in zip(es, ns, comb_img_grid.flatten()):
             fobj_cum.write('%.2f %.2f %.20f\n' % (x, y, sembcums))
         fobj_cum.close()
 
-        fobj_cum = open(os.path.join('work-%s/grad_grid_resam.ASC' % name), 'w')
+        fobj_cum = open(os.path.join('work-%s/grad_grid_resam.ASC' % name),
+                        'w')
         for x, y, sembcums in zip(es_resamp, ns_resamp, comb_img_grid_resamp):
             fobj_cum.write('%.2f %.2f %.20f\n' % (x, y, sembcums))
         fobj_cum.close()
@@ -1912,7 +1950,7 @@ def main():
 
     simp_fault, comp_fault = simplify(centers_bounding)
 
-    db = dump_geojson(simp_fault, longs_comb, lats_comb, name) #check
+    db = dump_geojson(simp_fault, longs_comb, lats_comb, name)
     if plot is True:
         plot_on_kite_scatter(db, scene_asc, longs_asc, lats_asc, x0, y0, x1,
                              y1, mind, maxd, fname,
