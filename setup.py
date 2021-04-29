@@ -28,6 +28,7 @@ setup(
         'weathertop',
         'weathertop.apps',
         'weathertop.process',
+        'weathertop.plotting',
     ],
     python_requires='>=3.5',
     entry_points={
@@ -56,6 +57,5 @@ setup(
         ],
 
     keywords=[
-        'seismology, waveform analysis, earthquake modelling, geophysics,'
-        ' backprojection'],
+        'seismology, waveform analysis, earthquake modelling, geophysics,'],
     )
