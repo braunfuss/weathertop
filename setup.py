@@ -34,6 +34,8 @@ setup(
     entry_points={
         'console_scripts': [
             'weathertop = weathertop.apps.weathertop:main',
+            'weathertop_clients = weathertop.apps.weathertop_clients:main',
+
         ]
     },
     package_dir={'weathertop': 'src'},
