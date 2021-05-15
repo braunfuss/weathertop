@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import requests
+import urllib.request
 
 op = os.path
 logging.basicConfig(level=logging.INFO)
@@ -17,6 +18,30 @@ def _download_file(url, outfile):
             if chunk:
                 f.write(chunk)
     return outfile
+
+
+def download_licsar_stack(tmin, tmax, track_number, destination="."):
+
+    fp = urllib.request.urlopen("http://gws-access.jasmin.ac.uk/public/nceo_geohazards/LiCSAR_products/%s" % (track_number))
+    page = fp.readlines()
+    for line in page[11:-4]:
+        line = line.decode("utf8")
+        idx = line.find("href=")
+        sub = line[idx+6:idx+23]
+        try:
+            fp = urllib.request.urlopen("http://gws-access.jasmin.ac.uk/public/nceo_geohazards/LiCSAR_products/%s/%s/interferograms/" % (track_number, sub))
+            page = fp.readlines()
+            nr_lines = len(page)
+            for line in page:
+                line = line.decode("utf8")
+                idx = line.find("href=")
+                date1 = line[idx+6:idx+14]
+                date2 = line[idx+15:idx+23]
+                if date1 >= tmin and date2 <= tmax:
+                    unw_url = "http://gws-access.jasmin.ac.uk/public/nceo_geohazards/LiCSAR_products/%s/%s/interferograms/%s" % (track_number, sub, line[idx+6:idx+23])
+                    download_licsar(unw_url, destination=destination)
+        except:
+            pass
 
 
 def download_licsar(unw_url, destination='.'):
@@ -51,4 +76,7 @@ def download_licsar(unw_url, destination='.'):
 
 def main():
     import sys
-    download_licsar(*sys.argv[1:])
+    if len(sys.argv)>3:
+        download_licsar_stack(*sys.argv[1:])
+    else:
+        download_licsar(*sys.argv[1:])
