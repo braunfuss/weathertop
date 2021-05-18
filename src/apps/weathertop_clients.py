@@ -9,7 +9,7 @@ import numpy as num
 
 op = os.path
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('kite.clients')
+logger = logging.getLogger('weathertop.clients')
 
 
 def _download_file(url, outfile):
@@ -91,7 +91,7 @@ def download_licsar(unw_url, destination='.'):
         outfn = op.normpath(op.join(destination, fn))
         _download_file(los_url, outfn)
 
-    logger.info('Download complete! Open with\n\n\tspool --load=%s',
+    logger.info('Download complete! You can open with\n\n\tspool --load=%s',
                 unw_file)
 
 
