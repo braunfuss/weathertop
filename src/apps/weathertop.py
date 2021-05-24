@@ -413,7 +413,8 @@ def process(img, coh, longs, lats, scene, x0, y0, x1, y1, fname, plot=True,
         image = image*coh_filt
 
     if plot is True:
-        plot_process(longs, lats, scene, ls_dark, ls_clear, grad_mask, image)
+        plot_process(longs, lats, scene, ls_dark, ls_clear, grad_mask, image,
+                     grad, plt_img, coh_filt, fname, topo=topo)
 
     return image
 

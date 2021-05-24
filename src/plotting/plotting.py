@@ -13,9 +13,13 @@ import rasterio.features
 import rasterio.warp
 import cartopy.crs as ccrs
 import cartopy
+from pyrocko import orthodrome
+import matplotlib.patches as mpatches
+from matplotlib.pyplot import cm
 
 
-def plot_process(longs, lats, scene, ls_dark, ls_clear, grad_mask, image):
+def plot_process(longs, lats, scene, ls_dark, ls_clear, grad_mask, image,
+                 grad, plt_img, coh_filt, fname, topo=False):
     eastings = longs
     northings = lats
     fig = plt.figure()
@@ -176,16 +180,16 @@ def plot_process(longs, lats, scene, ls_dark, ls_clear, grad_mask, image):
     plt.close()
 
 
-add_topo(ax):
-    # shade function when the data is retrieved.
-    shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
-    # Add the shaded SRTM source to our map with a grayscale colormap.
-    ax.add_raster(shaded_srtm, cmap='Greys')
-    ax.add_feature(cartopy.feature.OCEAN)
-    ax.add_feature(cartopy.feature.LAND, edgecolor='black')
-    ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
-    ax.add_feature(cartopy.feature.RIVERS)
-    return ax
+    def add_topo(ax):
+        # shade function when the data is retrieved.
+        shaded_srtm = PostprocessedRasterSource(SRTM1Source(), shade)
+        # Add the shaded SRTM source to our map with a grayscale colormap.
+        ax.add_raster(shaded_srtm, cmap='Greys')
+        ax.add_feature(cartopy.feature.OCEAN)
+        ax.add_feature(cartopy.feature.LAND, edgecolor='black')
+        ax.add_feature(cartopy.feature.LAKES, edgecolor='black')
+        ax.add_feature(cartopy.feature.RIVERS)
+        return ax
 
 
 class MidpointNormalize(mpl.colors.Normalize):
