@@ -15,7 +15,6 @@ logger = logging.getLogger('weathertop.clients')
 def _download_file(url, outfile):
     logger.debug('Downloading %s to %s', url, outfile)
     r = requests.get(url)
-
     with open(outfile, 'wb') as f:
         for chunk in r.iter_content(chunk_size=8192):
             if chunk:
@@ -52,7 +51,10 @@ def search_tracks(tmin, tmax, lat, lon, destination, track_number):
                         date2 = int(line[idx_sub+15:idx_sub+23])
                         if date1 >= int(tmin) and date2 <= int(tmax):
                             unw_url = "http://gws-access.jasmin.ac.uk/public/nceo_geohazards/LiCSAR_products/%s/%s/interferograms/%s" % (track_number, sub, line[idx_sub+6:idx_sub+23])
-                            download_licsar(unw_url+".unw.tif", destination=destination)
+                            track_name = str(sub)[0:4]
+                            download_licsar(unw_url+".unw.tif",
+                                            destination=destination,
+                                            track_name=track_name)
     except:
         pass
 
@@ -65,10 +67,9 @@ def download_licsar_stack(tmin, tmax, lat, lon, destination="."):
     pool.close()
 
 
-def download_licsar(unw_url, destination='.'):
+def download_licsar(unw_url, destination='.', track_name="_"):
     if not unw_url.endswith('.unw.tif'):
         raise ValueError('%s does not end with .unw.tif!' % unw_url)
-    print(unw_url)
     scene_name = op.basename(unw_url)
     url_dir = op.dirname(unw_url)
     product_name = op.basename(unw_url)
@@ -77,7 +78,7 @@ def download_licsar(unw_url, destination='.'):
 
     logger.info('Downloading surface displacement data from LiCSAR: %s',
                 product_name)
-    unw_file = op.join(destination, scene_name)
+    unw_file = op.join(destination, track_name+"_"+scene_name)
     _download_file(unw_url, unw_file)
 
     logger.info('Downloading LOS angles...')
